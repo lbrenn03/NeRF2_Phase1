@@ -49,11 +49,34 @@ if size(rxBuffer, 1) < TotalSamples, warning('Incomplete capture.'); end
 
 disp('Capture complete. Starting offline processing.');
 
-% 4. OFFLINE PACKET DETECTION (Sliding Normalized Correlation)
-% Use 'coeff' normalization: C(0) = 1 means perfect match.
+% 4. OFFLINE PACKET DETECTION
 [c_norm, lags] = xcorr(rxBuffer(:,1), reference_sig); 
-[maxVal, idx] = max(abs(c_norm));
 
+% Find all peaks above threshold
+[pks, locs] = findpeaks(abs(c_norm), 'MinPeakHeight', normalizedThreshold, 'SortStr', 'descend');
+
+% Filter to only keep peaks with full packet within buffer
+validPeaks = [];
+validLocs = [];
+for i = 1:length(pks)
+    lag = lags(locs(i));
+    startIdx = lag + 1;
+    endIdx = startIdx + N - 1;
+    
+    % Check if packet fits completely in buffer
+    if startIdx > 0 && endIdx <= size(rxBuffer, 1)
+        validPeaks(end+1) = pks(i);
+        validLocs(end+1) = locs(i);
+    end
+end
+
+% Take the best valid packet
+if ~isempty(validPeaks)
+    [maxVal, bestIdx] = max(validPeaks);
+    idx = validLocs(bestIdx);
+    lag = lags(idx);
+    startIdx = lag + 1;
+end
 % B. THRESHOLD CHECK (Normalized correlation peak)
 % A value near 1.0 is a perfect match. Set a confident threshold, e.g., 0.6.
 normalizedThreshold = 15; 
@@ -124,14 +147,17 @@ if maxVal > normalizedThreshold
         rx_bits_ant1 = qpskDemod(mf_ant1);
         rx_bits_ant2 = qpskDemod(mf_ant2);
         
-        % Trim to length of reference bits
-        L = length(ref_bits);
+        % Compute actual length after processing
+        L = min(length(ref_bits), length(rx_bits_ant1));
+        
+        % Trim both reference and received to same length
+        ref_bits_trimmed = ref_bits(1:L);
         rx_bits_ant1 = rx_bits_ant1(1:L);
         rx_bits_ant2 = rx_bits_ant2(1:L);
         
         % Compute bit error rates
-        [numErr1, ber1] = biterr(ref_bits, rx_bits_ant1);
-        [numErr2, ber2] = biterr(ref_bits, rx_bits_ant2);
+        [numErr1, ber1] = biterr(ref_bits_trimmed, rx_bits_ant1);
+        [numErr2, ber2] = biterr(ref_bits_trimmed, rx_bits_ant2);
         
         fprintf("\n================ BER RESULTS ================\n");
         fprintf("Antenna 1: Bit Errors = %d / %d   BER = %.6f\n", numErr1, L, ber1);
