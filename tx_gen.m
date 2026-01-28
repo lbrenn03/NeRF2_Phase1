@@ -53,5 +53,8 @@ disp("Transmitting Sounding Signal... Press Ctrl+C to stop.");
 % 5. TRANSMISSION LOOP
 while true
     tx(tx_frame);
+    pause on
+    pause(0.05)
 end
+
 
