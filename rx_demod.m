@@ -416,13 +416,14 @@ final_data.results = results;
 final_data.num_packets = numel(valid_packets);
 final_data.all_syms_ant1 = all_syms_ant1;
 final_data.all_syms_ant2 = all_syms_ant2;
-final_data.rx_pos = [0, 0, 0.571];
+final_data.rx_pos = [0, 0, 0.571]; % This line changes
 final_data.tx_pos = [-1, 10, 0.875];
 final_data.freq = 915e6;
 final_data.tx_bf_angle = NaN;
 final_data.rx_orientation = NaN;
 final_data.tx_mimo = NaN;
 
+% This Line changes to 'nerf_[n].mat'
 save('nerf_1.mat','final_data'); % increment to save to nerf_(n+1).mat
 
 release(rxObj);
