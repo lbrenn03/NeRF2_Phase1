@@ -256,37 +256,88 @@ for p = 1:numel(valid_packets)
 end
 
 %% -------------------------------------------------------------------------
-% 7. CONSTELLATION PLOTS
+% 7. COMPUTE CLUSTER MEANS PER PACKET (4 points per packet)
+% -------------------------------------------------------------------------
+% For each packet, separate symbols by QPSK constellation point and average
+cluster_means_ant1 = zeros(4, numel(valid_packets));
+cluster_means_ant2 = zeros(4, numel(valid_packets));
+
+for p = 1:numel(valid_packets)
+    syms_ant1 = all_syms_ant1(:, p);
+    syms_ant2 = all_syms_ant2(:, p);
+    
+    % Use k-means to identify which symbols belong to which cluster
+    try
+        [idx1, ~] = kmeans([real(syms_ant1), imag(syms_ant1)], 4, ...
+            'MaxIter', 100, 'Replicates', 3);
+        
+        % Average symbols in each cluster
+        for c = 1:4
+            cluster_syms = syms_ant1(idx1 == c);
+            if ~isempty(cluster_syms)
+                cluster_means_ant1(c, p) = mean(cluster_syms);
+            else
+                cluster_means_ant1(c, p) = NaN;
+            end
+        end
+    catch
+        cluster_means_ant1(:, p) = NaN;
+    end
+    
+    try
+        [idx2, ~] = kmeans([real(syms_ant2), imag(syms_ant2)], 4, ...
+            'MaxIter', 100, 'Replicates', 3);
+        
+        for c = 1:4
+            cluster_syms = syms_ant2(idx2 == c);
+            if ~isempty(cluster_syms)
+                cluster_means_ant2(c, p) = mean(cluster_syms);
+            else
+                cluster_means_ant2(c, p) = NaN;
+            end
+        end
+    catch
+        cluster_means_ant2(:, p) = NaN;
+    end
+end
+
+%% -------------------------------------------------------------------------
+% 8. CONSTELLATION PLOTS
 % -------------------------------------------------------------------------
 % Calculate symbol-wise averages across all packets
 avg_syms_ant1 = mean(all_syms_ant1, 2);
 avg_syms_ant2 = mean(all_syms_ant2, 2);
 
 figure(2); clf;
+colors = lines(4);
 
-% Plot 1: Cluster Centroids (Antenna 1)
+% Plot 1: Cluster Means Per Packet (Antenna 1)
 subplot(2,2,1)
 hold on
-colors = lines(4);
 for cluster_idx = 1:4
-    cluster_data = cluster_centers_ant1(cluster_idx, :);
+    cluster_data = cluster_means_ant1(cluster_idx, :);
     cluster_data = cluster_data(~isnan(cluster_data)); % remove NaN
-    scatter(real(cluster_data), imag(cluster_data), 20, colors(cluster_idx,:), 'filled', 'MarkerFaceAlpha', 0.3);
-end
-
-% Plot 2: Cluster Centroids (Antenna 2)
-subplot(2,2,2)
-hold on
-for cluster_idx = 1:4
-    cluster_data = cluster_centers_ant2(cluster_idx, :);
-    cluster_data = cluster_data(~isnan(cluster_data));
-    scatter(real(cluster_data), imag(cluster_data), 20, colors(cluster_idx,:), 'filled', 'MarkerFaceAlpha', 0.3);
+    scatter(real(cluster_data), imag(cluster_data), 50, colors(cluster_idx,:), 'filled', 'MarkerFaceAlpha', 0.6);
 end
 hold off
 grid on; axis equal;
-title(sprintf('Cluster Centroids - Ant 2 (%d packets)', numel(valid_packets)));
+title(sprintf('Cluster Means Per Packet - Ant 1 (%d pkts)', numel(valid_packets)));
 xlabel('In-Phase'); ylabel('Quadrature');
-legend('Cluster 1', 'Cluster 2', 'Cluster 3', 'Cluster 4', 'Ideal', 'Location', 'best');
+legend('Cluster 1', 'Cluster 2', 'Cluster 3', 'Cluster 4', 'Location', 'best');
+
+% Plot 2: Cluster Means Per Packet (Antenna 2)
+subplot(2,2,2)
+hold on
+for cluster_idx = 1:4
+    cluster_data = cluster_means_ant2(cluster_idx, :);
+    cluster_data = cluster_data(~isnan(cluster_data));
+    scatter(real(cluster_data), imag(cluster_data), 50, colors(cluster_idx,:), 'filled', 'MarkerFaceAlpha', 0.6);
+end
+hold off
+grid on; axis equal;
+title(sprintf('Cluster Means Per Packet - Ant 2 (%d pkts)', numel(valid_packets)));
+xlabel('In-Phase'); ylabel('Quadrature');
+legend('Cluster 1', 'Cluster 2', 'Cluster 3', 'Cluster 4', 'Location', 'best');
 
 % Plot 3: Symbol-wise Average (Antenna 1)
 subplot(2,2,3)
@@ -307,7 +358,7 @@ title(sprintf('Symbol-wise Average - Ant 2 (avg of %d pkts)', numel(valid_packet
 xlabel('In-Phase'); ylabel('Quadrature');
 
 %% -------------------------------------------------------------------------
-% 8. DENOISING ANALYSIS - MSE vs Number of Packets Averaged  
+% 9. DENOISING ANALYSIS - MSE vs Number of Packets Averaged  
 % -------------------------------------------------------------------------
 max_N = numel(valid_packets);
 mse_vs_N_ant1 = zeros(4, max_N);  % 4 clusters x N packets
@@ -390,7 +441,7 @@ title('Denoising: MSE vs N - Ant 2');
 legend('Cluster 1', 'Cluster 2', 'Cluster 3', 'Cluster 4', 'Location', 'best');
 
 %% -------------------------------------------------------------------------
-% 9. SUMMARY STATISTICS
+% 10. SUMMARY STATISTICS
 % -------------------------------------------------------------------------
 fprintf("\n================ SUMMARY STATISTICS ================\n");
 fprintf("Total packets processed: %d\n", numel(valid_packets));
@@ -410,20 +461,21 @@ fprintf("  Std CFO:     %.1f Hz\n", std([results.cfo]));
 fprintf("====================================================\n");
 
 %% -------------------------------------------------------------------------
-% 10. SAVE RESULTS
+% 11. SAVE RESULTS
 % -------------------------------------------------------------------------
 final_data.results = results;
 final_data.num_packets = numel(valid_packets);
 final_data.all_syms_ant1 = all_syms_ant1;
 final_data.all_syms_ant2 = all_syms_ant2;
-final_data.rx_pos = [0, 0, 0.571]; % This line changes
+final_data.cluster_means_ant1 = cluster_means_ant1;
+final_data.cluster_means_ant2 = cluster_means_ant2;
+final_data.rx_pos = [1, 11, 0.571];
 final_data.tx_pos = [-1, 10, 0.875];
 final_data.freq = 915e6;
 final_data.tx_bf_angle = NaN;
 final_data.rx_orientation = NaN;
 final_data.tx_mimo = NaN;
 
-% This Line changes to 'nerf_[n].mat'
-save('nerf_1.mat','final_data'); % increment to save to nerf_(n+1).mat
+save('nerf_1_11.mat','final_data'); % increment to save to nerf_(n+1).mat
 
 release(rxObj);
