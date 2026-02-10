@@ -3,6 +3,9 @@ clear;
 %  NeRF2 RECEIVER — 2 s Offline Processing (Top 100 Packets)
 % =========================================================================
 
+x_lab = 6;
+y_lab = 0;
+
 %% -------------------------------------------------------------------------
 % 1. CONFIGURATION
 % -------------------------------------------------------------------------
@@ -469,13 +472,14 @@ final_data.all_syms_ant1 = all_syms_ant1;
 final_data.all_syms_ant2 = all_syms_ant2;
 final_data.cluster_means_ant1 = cluster_means_ant1;
 final_data.cluster_means_ant2 = cluster_means_ant2;
-final_data.rx_pos = [1, 11, 0.571];
+final_data.rx_pos = [x_lab, y_lab, 0.571];
 final_data.tx_pos = [-1, 10, 0.875];
 final_data.freq = 915e6;
 final_data.tx_bf_angle = NaN;
 final_data.rx_orientation = NaN;
 final_data.tx_mimo = NaN;
 
-save('nerf_1_11.mat','final_data'); % increment to save to nerf_(n+1).mat
+filename = 'nerf_' + string(x_lab) + '_' + string(y_lab) + '.mat'
+save(filename,'final_data'); % increment to save to nerf_(n+1).mat
 
 release(rxObj);
