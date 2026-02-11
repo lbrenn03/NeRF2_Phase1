@@ -479,7 +479,7 @@ final_data.tx_bf_angle = NaN;
 final_data.rx_orientation = NaN;
 final_data.tx_mimo = NaN;
 
-filename = 'nerf_' + string(x_lab) + '_' + string(y_lab) + '.mat'
+filename = 'pilot_data/x-' + string(x_lab) + '/nerf_' + string(x_lab) + '_' + string(y_lab) + '.mat'
 save(filename,'final_data'); % increment to save to nerf_(n+1).mat
 
 release(rxObj);
