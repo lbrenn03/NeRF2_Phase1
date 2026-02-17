@@ -305,60 +305,72 @@ for p = 1:numel(valid_packets)
 end
 
 %% -------------------------------------------------------------------------
-% 8. CONSTELLATION PLOTS
+% 8. DIAGNOSTIC CONSTELLATION FIGURE (replaces averaged constellation)
+%    Shows 4 individual packets spread across the capture + summary metrics
 % -------------------------------------------------------------------------
-% Calculate symbol-wise averages across all packets
-avg_syms_ant1 = mean(all_syms_ant1, 2);
-avg_syms_ant2 = mean(all_syms_ant2, 2);
+
+% Pick 4 representative packet indices spread across the capture
+num_p = numel(valid_packets);
+sample_idxs = unique(round(linspace(1, num_p, min(4, num_p))));
 
 figure(2); clf;
-colors = lines(4);
+tiledlayout(3, max(numel(sample_idxs), 2), 'TileSpacing', 'compact', 'Padding', 'compact');
 
-% Plot 1: Cluster Means Per Packet (Antenna 1)
-subplot(2,2,1)
-hold on
-for cluster_idx = 1:4
-    cluster_data = cluster_means_ant1(cluster_idx, :);
-    cluster_data = cluster_data(~isnan(cluster_data)); % remove NaN
-    scatter(real(cluster_data), imag(cluster_data), 50, colors(cluster_idx,:), 'filled', 'MarkerFaceAlpha', 0.6);
+for si = 1:numel(sample_idxs)
+    p = sample_idxs(si);
+    syms1 = all_syms_ant1(:, p);
+    syms2 = all_syms_ant2(:, p);
+
+    % --- Per-packet EVM (relative to k-means cluster centers) ---
+    try
+        [~, c1] = kmeans([real(syms1), imag(syms1)], 4, 'MaxIter', 100, 'Replicates', 3);
+        c1c = c1(:,1) + 1j*c1(:,2);
+        % Assign each symbol to nearest center
+        dists1 = abs(syms1 - c1c.');   % 500 x 4
+        [~, assign1] = min(dists1, [], 2);
+        evm1 = mean(abs(syms1 - c1c(assign1)).^2);
+    catch
+        evm1 = NaN;
+    end
+
+    try
+        [~, c2] = kmeans([real(syms2), imag(syms2)], 4, 'MaxIter', 100, 'Replicates', 3);
+        c2c = c2(:,1) + 1j*c2(:,2);
+        dists2 = abs(syms2 - c2c.');
+        [~, assign2] = min(dists2, [], 2);
+        evm2 = mean(abs(syms2 - c2c(assign2)).^2);
+    catch
+        evm2 = NaN;
+    end
+
+    % --- Row 1: Ant 1 individual constellation ---
+    nexttile(si)
+    scatter(real(syms1), imag(syms1), 8, 'b', 'filled', 'MarkerFaceAlpha', 0.3);
+    grid on; axis equal;
+    title(sprintf('Pkt %d | Ant1 | EVM=%.3f', p, evm1), 'FontSize', 8);
+    xlabel('I'); ylabel('Q');
+
+    % --- Row 2: Ant 2 individual constellation ---
+    nexttile(si + max(numel(sample_idxs), 2))
+    scatter(real(syms2), imag(syms2), 8, 'r', 'filled', 'MarkerFaceAlpha', 0.3);
+    grid on; axis equal;
+    title(sprintf('Pkt %d | Ant2 | EVM=%.3f', p, evm2), 'FontSize', 8);
+    xlabel('I'); ylabel('Q');
 end
-hold off
-grid on; axis equal;
-title(sprintf('Cluster Means Per Packet - Ant 1 (%d pkts)', numel(valid_packets)));
-xlabel('In-Phase'); ylabel('Quadrature');
-legend('Cluster 1', 'Cluster 2', 'Cluster 3', 'Cluster 4', 'Location', 'best');
 
-% Plot 2: Cluster Means Per Packet (Antenna 2)
-subplot(2,2,2)
-hold on
-for cluster_idx = 1:4
-    cluster_data = cluster_means_ant2(cluster_idx, :);
-    cluster_data = cluster_data(~isnan(cluster_data));
-    scatter(real(cluster_data), imag(cluster_data), 50, colors(cluster_idx,:), 'filled', 'MarkerFaceAlpha', 0.6);
-end
-hold off
-grid on; axis equal;
-title(sprintf('Cluster Means Per Packet - Ant 2 (%d pkts)', numel(valid_packets)));
-xlabel('In-Phase'); ylabel('Quadrature');
-legend('Cluster 1', 'Cluster 2', 'Cluster 3', 'Cluster 4', 'Location', 'best');
+% --- Row 3: Correlation peak strength across all packets (stability indicator) ---
+peak_vals = [valid_packets.peakVal];
+peak_times = [valid_packets.peakTime];
 
-% Plot 3: Symbol-wise Average (Antenna 1)
-subplot(2,2,3)
-scatter(real(avg_syms_ant1), imag(avg_syms_ant1), 15, 'b', 'filled', 'MarkerFaceAlpha', 0.5);
-hold on
-hold off
-grid on; axis equal;
-title(sprintf('Symbol-wise Average - Ant 1 (avg of %d pkts)', numel(valid_packets)));
-xlabel('In-Phase'); ylabel('Quadrature');
+nexttile([1, max(numel(sample_idxs), 2)])
+plot(peak_times, peak_vals / max(peak_vals), 'k.-', 'MarkerSize', 12, 'LineWidth', 1.2);
+yline(0.75, 'r--', '75% threshold', 'LabelHorizontalAlignment', 'left');
+grid on;
+xlabel('Capture Time (s)');
+ylabel('Normalized Peak Strength');
+title(sprintf('Correlation Peak Stability | CV = %.3f', std(peak_vals)/mean(peak_vals)));
+ylim([0 1.1]);
 
-% Plot 4: Symbol-wise Average (Antenna 2)
-subplot(2,2,4)
-scatter(real(avg_syms_ant2), imag(avg_syms_ant2), 15, 'r', 'filled', 'MarkerFaceAlpha', 0.5);
-hold on
-hold off
-grid on; axis equal;
-title(sprintf('Symbol-wise Average - Ant 2 (avg of %d pkts)', numel(valid_packets)));
-xlabel('In-Phase'); ylabel('Quadrature');
 
 %% -------------------------------------------------------------------------
 % 9. DENOISING ANALYSIS - MSE vs Number of Packets Averaged  
