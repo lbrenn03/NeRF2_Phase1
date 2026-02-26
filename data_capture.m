@@ -2,7 +2,7 @@ clear;
 
 % Adjust to match RX position
 x_lab = 5;
-y_lab = 11;
+y_lab = ;
 
 % Adjust to match TX position
 tx_pos = [6, 5, 1.021];
@@ -59,11 +59,11 @@ raw_data.bf_angle    = NaN;
 raw_data.rx_orient   = 0;
 
 if x_lab >= 0
-    filename = 'localdata/p1_tx3_' + string(x_lab) + '_' + string(y_lab) + '.mat';
+    filename = 'pilot_data/tx_6_5/p1_tx3_' + string(x_lab) + '_' + string(y_lab) + '.mat';
 else
-    filename = 'localdata/p1_tx3_n1_' + string(y_lab) + '.mat';
+    filename = 'pilot_data/tx_6_5/p1_tx3_n1_' + string(y_lab) + '.mat';
 end
 
-save('filename', 'raw_data');
+save(filename, 'raw_data');
 
 release(rxObj);
