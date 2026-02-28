@@ -27,7 +27,7 @@ from scipy.cluster.vq import kmeans2
 # ==============================================================================
 parser = argparse.ArgumentParser(description='NeRF2 offline receiver')
 # parser.add_argument('--input',  default='../pilot_data/channelCoherenceTest_raw.mat', help='Input .mat file')
-parser.add_argument('--input',  default='../pilot_data/p1_tx2_6_9.mat', help='Input .mat file')
+parser.add_argument('--input',  default='../../pilot_data/p1_tx2_7_9.mat', help='Input .mat file')
 parser.add_argument('--output', default='processed.mat',    help='Output .mat file')
 args = parser.parse_args()
 

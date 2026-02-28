@@ -17,25 +17,14 @@ packet_config.silence_duration_ms = 20;           % Silent gap between packets (
 packet_config.enable_precise_timing = true;       % Use timer for precise intervals
 
 %% 1. HARDWARE CONFIG - ANTENNA 1
-tx1 = comm.SDRuTransmitter(...
+tx = comm.SDRuTransmitter(...
     'Platform',             'B210', ...
     'SerialNum',            '34C78EF', ...
-    'ChannelMapping',       1, ...               % TX Channel 1
+    'ChannelMapping',       [1 2], ...
     'MasterClockRate',      30e6, ...
     'InterpolationFactor',  60, ...              % Fs = 500 kS/s
     'CenterFrequency',      beam_config.fc, ...
     'Gain',                 60, ...              % FIXED GAIN
-    'TransportDataType',    'int16');
-
-%% HARDWARE CONFIG - ANTENNA 2
-tx2 = comm.SDRuTransmitter(...
-    'Platform',             'B210', ...
-    'SerialNum',            '34C78EF', ...
-    'ChannelMapping',       2, ...               % TX Channel 2
-    'MasterClockRate',      30e6, ...
-    'InterpolationFactor',  60, ...
-    'CenterFrequency',      beam_config.fc, ...
-    'Gain',                 60, ...
     'TransportDataType',    'int16');
 
 Fs = 30e6 / 60; % 500 ksps
@@ -103,8 +92,8 @@ if packet_interval_samples > waveform_length
     silence = complex(zeros(silence_samples + additional_silence, 1));
 end
 
-tx_frame_ant1 = [tx_waveform_ant1; silence];
-tx_frame_ant2 = [tx_waveform_ant2; silence];
+tx_frame_ant1 = [silence; tx_waveform_ant1];
+tx_frame_ant2 = [silence; tx_waveform_ant2];
 
 fprintf('\n=== TRANSMISSION PARAMETERS ===\n');
 fprintf('Sample Rate: %.0f kS/s\n', Fs/1e3);
@@ -120,8 +109,7 @@ if packet_config.enable_precise_timing
     
     while true
         % Transmit simultaneously from both antennas
-        tx1(tx_frame_ant1);
-        tx2(tx_frame_ant2);
+        tx([tx_frame_ant1 tx_frame_ant2]);
         
         packet_count = packet_count + 1;
         
@@ -140,7 +128,6 @@ if packet_config.enable_precise_timing
     end
 else
     while true
-        tx1(tx_frame_ant1);
-        tx2(tx_frame_ant2);
+        tx([tx_frame_ant1 tx_frame_ant2]);
     end
 end
