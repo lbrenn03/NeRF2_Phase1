@@ -57,7 +57,7 @@ tx_waveform_base = tx_waveform_base / max(abs(tx_waveform_base)) * 0.8;
 
 % 3. BEAMFORMING PARAMETERS
 sweep_duration = 0.1;          % Time per beam direction (100ms)
-angles = 0:10:359;             % Sweep in 10-degree increments (full circle)
+angles = 0:60:359;             % Sweep in 10-degree increments (full circle)
 num_antennas = 2;              % B210 has 2 TX channels
 
 % Frame construction base
