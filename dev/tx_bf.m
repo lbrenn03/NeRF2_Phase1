@@ -1,7 +1,7 @@
 clear all;
 
 %% ==============================================================================
-% NeRF2 BEAMFORMING TRANSMITTER (Circular Sweep)
+% NeRF2 BEAMFORMING TRANSMITTER (Fast Circular Sweep - 1 pkt/angle)
 %% ==============================================================================
 
 % 1. HARDWARE CONFIG
@@ -10,14 +10,13 @@ c = 3e8;                       % Speed of light
 lambda = c / fc;               % Wavelength
 d = 0.5 * lambda;              % Antenna spacing (0.5λ)
 
-% Assuming 2 antennas on B210 (MIMO capable)
 tx = comm.SDRuTransmitter(...
     'Platform',             'B210', ...
     'SerialNum',            '34C78EF', ...
     'MasterClockRate',      30e6, ...
     'InterpolationFactor',  60, ...          % Fs = 500 kS/s
     'CenterFrequency',      fc, ...
-    'Gain',                 60, ...          % FIXED GAIN
+    'Gain',                 60, ...
     'ChannelMapping',       [1, 2], ...      % Enable both TX channels
     'TransportDataType',    'int16');
 
@@ -35,7 +34,7 @@ pn = comm.PNSequence(...
 sounding_bits = pn();
 
 % QPSK Modulate
-qpskMod = comm.QPSKModulator('BitInput', true, 'PhaseOffset', pi/4);
+qpskMod = comm.QPSKModulator('BitInput',true, 'PhaseOffset', pi/4);
 
 % Padding for QPSK (even number of bits)
 if mod(length(sounding_bits), 2) ~= 0
@@ -56,30 +55,35 @@ tx_waveform_base = rrcTx(sounding_syms);
 tx_waveform_base = tx_waveform_base / max(abs(tx_waveform_base)) * 0.8;
 
 % 3. BEAMFORMING PARAMETERS
-sweep_duration = 0.1;          % Time per beam direction (100ms)
-angles = 0:60:359;             % Sweep in 10-degree increments (full circle)
+angles = 0:60:299;             % 6 beam positions (0°, 60°, 120°, 180°, 240°, 300°)
 num_antennas = 2;              % B210 has 2 TX channels
 
-% Frame construction base
-silence = complex(zeros(20000, 1));
+% Timing: 1 packet per angle
+INTER_PACKET_GAP = 0.05;       % 50ms between packets (matches receiver)
+
+% Frame construction
+silence = complex(zeros(20000, 1));  % Pre-packet silence
+inter_packet_silence = complex(zeros(round(INTER_PACKET_GAP * Fs), 1));
 
 disp("==========================================================");
-disp("Transmitting Beamformed Signal with Circular Sweep");
+disp("Transmitting Beamformed Signal - 1 Packet per Angle");
 disp("==========================================================");
 fprintf("Center Frequency: %.2f MHz\n", fc/1e6);
 fprintf("Antenna Spacing: %.4f m (0.5λ)\n", d);
-fprintf("Sweep Rate: %.1f degrees every %.0f ms\n", 10, sweep_duration*1000);
+fprintf("Beam angles: %s\n", mat2str(angles));
+fprintf("Packets per cycle: %d\n", length(angles));
 disp("Press Ctrl+C to stop.");
 disp("==========================================================");
 
 % 4. CONTINUOUS CIRCULAR SWEEP
 angle_idx = 1;
+cycle_count = 0;
+
 while true
     % Current beam angle
     theta = deg2rad(angles(angle_idx));
     
-    % Calculate phase shifts for 2-element uniform linear array (ULA)
-    % Phase delay for antenna n: -(2π/λ) * d * (n-1) * sin(θ)
+    % Calculate phase shifts for 2-element ULA
     phase_shifts = zeros(1, num_antennas);
     for n = 1:num_antennas
         phase_shifts(n) = -2*pi/lambda * d * (n-1) * sin(theta);
@@ -89,21 +93,21 @@ while true
     tx_antenna1 = tx_waveform_base * exp(1j * phase_shifts(1));
     tx_antenna2 = tx_waveform_base * exp(1j * phase_shifts(2));
     
-    % Construct frames for both antennas
-    tx_frame1 = [silence; tx_antenna1];
-    tx_frame2 = [silence; tx_antenna2];
+    % Construct single-packet frames for both antennas
+    tx_frame1 = [silence; tx_antenna1; inter_packet_silence];
+    tx_frame2 = [silence; tx_antenna2; inter_packet_silence];
     
-    % Interleave samples for both channels (B210 expects interleaved format)
-    tx_frame = zeros(2*length(tx_frame1), 1);
-    tx_frame(1:2:end) = tx_frame1;  % Channel 1 (odd indices)
-    tx_frame(2:2:end) = tx_frame2;  % Channel 2 (even indices)
+    % Create matrix with columns for each antenna (correct format)
+    tx_frame = [tx_frame1, tx_frame2];
     
-    % Transmit
+    % Transmit single packet at this angle
     tx(tx_frame);
     
-    % Display current beam direction (update every 5 angles)
-    if mod(angle_idx, 5) == 1
-        fprintf("Beam Direction: %3d degrees\n", angles(angle_idx));
+    % Display progress (every complete cycle)
+    if angle_idx == 1
+        cycle_count = cycle_count + 1;
+        fprintf("Cycle %d complete (angles: %s)\n", ...
+                cycle_count, mat2str(angles));
     end
     
     % Move to next angle
@@ -111,7 +115,4 @@ while true
     if angle_idx > length(angles)
         angle_idx = 1;  % Loop back to 0 degrees
     end
-    
-    % Small pause to control sweep rate
-    pause(sweep_duration);
 end
