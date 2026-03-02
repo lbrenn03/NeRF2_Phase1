@@ -13,6 +13,9 @@ tx = comm.SDRuTransmitter(...
     'Gain',                 60, ...          % FIXED GAIN (Do not change during data collection)
     'TransportDataType',    'int16');
 
+tx.EnableBurstMode = true;
+tx.NumFramesInBurst = 1;
+
 Fs = 30e6 / 60; % 500 ksps
 
 % 2. SIGNAL GENERATION (PN Sequence 1023)
@@ -44,17 +47,13 @@ tx_waveform = rrcTx(sounding_syms);
 tx_waveform = tx_waveform / max(abs(tx_waveform)) * 0.8;
 
 % 4. FRAME CONSTRUCTION
-% We add a small gap of silence between packets so the RX can distinguish them
-silence = complex(zeros(2000, 1)); 
-tx_frame = [tx_waveform; silence];
+silence = complex(zeros(20000, 1)); 
+tx_frame = [silence; tx_waveform];
 
 disp("Transmitting Sounding Signal... Press Ctrl+C to stop.");
 
 % 5. TRANSMISSION LOOP
 while true
     tx(tx_frame);
-    pause on
-    pause(0.05)
 end
-
 
