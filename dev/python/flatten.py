@@ -17,10 +17,11 @@ def kmeans_cluster_means(syms, filepath='unknown', packet=0, ant=0):
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter('always')
         centroids, labels = kmeans2(pts, 4, iter=20, minit='points', missing='warn')
-        if w:
-            means = centroids[:, 0] + 1j * centroids[:, 1]
-            print(f"  kmeans warning ant{ant} packet {packet}: {filepath}  — {w[1].message}")
-            print(f"    centroids: {means}")
+        # Debuggins Statement
+        # if w:
+        #     means = centroids[:, 0] + 1j * centroids[:, 1]
+        #     print(f"  kmeans warning ant{ant} packet {packet}: {filepath}  — {w[0].message}")
+        #     print(f"    centroids: {means}")
     return centroids[:, 0] + 1j * centroids[:, 1]
 
 
@@ -35,7 +36,7 @@ def normalize_packet(data):
         elif num_packets < TARGET_PACKETS:
             padding = TARGET_PACKETS - num_packets
 
-            data[key] = np.pad(array, ((0, 0), (0, padding)))  # pad with zeros
+            data[key] = np.pad(array, ((0, 0), (padding, 0)))  # append with zeros
     
     data['num_packets'] = TARGET_PACKETS
     return data
@@ -153,7 +154,7 @@ def build_feature_matrix(groups):
             continue
 
         X.append(np.stack(tx_features, axis=0))  # (3, 4, 2, 8)
-        y.append(rx_pos)
+        y.append(rx_pos * 0.6096) # Unit conversion from ft to m
 
     return np.array(X), np.array(y)  # (N, 3, 4, 2, 8), (N, 3)
 

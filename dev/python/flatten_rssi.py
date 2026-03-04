@@ -16,7 +16,7 @@ def flatten_and_save_rssi(X, y):
     N = X.shape[0]
     # X shape: (N, 3, 4, 2, 8)
     # mean over cluster dim (axis=2) → (N, 3, 2, 8)
-    power = np.mean(np.abs(X)**2, axis=2)
+    power = np.abs(np.mean(X, axis=2))**2 # average the 4 centroids into one complex number, then compute power
     rssi  = 10 * np.log10(power + 1e-10 )  # (N, 3, 2, 8)
 
     flat = rssi.reshape(N, -1)             # (N, 48)
@@ -28,10 +28,10 @@ def flatten_and_save_rssi(X, y):
     df_y = pd.DataFrame(y, columns=['x', 'y', 'z'])
 
     df_X.to_csv(os.path.join(output_dir, 'features_rssi.csv'), index=False)
-    df_y.to_csv(os.path.join(output_dir, 'labels_rssi.csv'), index=False)
+    df_y.to_csv(os.path.join(output_dir, 'labels.csv'), index=False)
 
     print(f"Saved X: {df_X.shape} -> features_rssi.csv")
-    print(f"Saved y: {df_y.shape} -> labels_rssi.csv")
+    print(f"Saved y: {df_y.shape} -> labels.csv")
 
 
 if __name__ == '__main__':
