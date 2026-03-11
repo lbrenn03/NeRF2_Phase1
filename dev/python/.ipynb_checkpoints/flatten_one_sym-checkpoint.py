@@ -123,7 +123,7 @@ def group_files(data_dir):
 def build_feature_matrix(groups):
     """
     Returns:
-        X : (N rxpos, 3 txpos, 2 ant) complex
+        X : (N rxpos, 3 txpos, 4 sym, 2 ant, 8 pkt) complex
         y : (N rxpos, 3 txpos) float  [rx_pos]
     """
     X, y = [], []
@@ -160,11 +160,13 @@ def build_feature_matrix(groups):
         X.append(np.stack(tx_features, axis=0))  # (3, 2)
         y.append(rx_pos * 0.6096) # Unit conversion from ft to m
         
-    X = np.nanmean(np.array(X), axis=4) # average packets
-    X = np.nanmean(X, axis=2) # average symbols
+    # X = np.nanmean(np.array(X), axis=4) # average packets
+    # X = np.nanmean(X, axis=2) # average symbols
+    X = np.array(X)
+    X = X[:, :, 0, :]                   # select symbol 0 → (N,3,2)
     X = np.nan_to_num(X, nan=0.0)
 
-    return np.array(X), np.array(y)  # (N, 3, 2), (N, 3)
+    return np.array(X), np.array(y)  # (N, 3, 2, 8), (N, 3)
 
 
 def flatten_and_save(X, y): 
@@ -190,10 +192,10 @@ def flatten_and_save(X, y):
     )
     df_y = pd.DataFrame(y, columns=['x', 'y', 'z'])
 
-    df_X.to_csv(os.path.join(output_dir, 'features_sym_avg.csv'), index=False)
+    df_X.to_csv(os.path.join(output_dir, 'features_3x2x8.csv'), index=False)
     df_y.to_csv(os.path.join(output_dir, 'labels.csv'), index=False)
 
-    print(f"Saved X: {df_X.shape} -> features_sym_avg.csv")
+    print(f"Saved X: {df_X.shape} -> features_3x2x8.csv")
     print(f"Saved y: {df_y.shape} -> labels.csv")
 
 if __name__ == '__main__':
