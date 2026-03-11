@@ -202,18 +202,18 @@ def process_packets(valid_packets, rxBuffer, ref_syms, pn_bits):
         syms_ant1 = syms_ant1[symbol_indices_ant1]
         syms_ant2 = syms_ant2[symbol_indices_ant2]
 
-        # if p < 5:  # First 5 packets
-        #     # Plot symbol magnitudes vs symbol index
-        #     plt.figure(figsize=(10, 4))
-        #     plt.plot(np.arange(len(syms_ant1)), np.abs(syms_ant1), marker='o', linestyle='-', label='Antenna 1')
-        #     plt.plot(np.arange(len(syms_ant2)), np.abs(syms_ant2), marker='x', linestyle='-', label='Antenna 2')
-        #     plt.xlabel('Symbol Index within Packet')
-        #     plt.ylabel('Magnitude')
-        #     plt.title(f'Packet {p} Symbol Magnitudes')
-        #     plt.grid(True)
-        #     plt.legend()
-        #     plt.tight_layout()
-        #     plt.show()
+        if p < 5:  # First 5 packets
+            # Plot symbol magnitudes vs symbol index
+            plt.figure(figsize=(10, 4))
+            plt.plot(np.arange(len(syms_ant1)), np.abs(syms_ant1), marker='o', linestyle='-', label='Antenna 1')
+            plt.plot(np.arange(len(syms_ant2)), np.abs(syms_ant2), marker='x', linestyle='-', label='Antenna 2')
+            plt.xlabel('Symbol Index within Packet')
+            plt.ylabel('Magnitude')
+            plt.title(f'Packet {p} Symbol Magnitudes')
+            plt.grid(True)
+            plt.legend()
+            plt.tight_layout()
+            plt.show()
 
         all_syms_ant1[:, p] = fit_to(syms_ant1, NUM_REF_SYMS)
         all_syms_ant2[:, p] = fit_to(syms_ant2, NUM_REF_SYMS)
