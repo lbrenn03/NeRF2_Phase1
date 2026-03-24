@@ -73,7 +73,6 @@ syms_S2 = sounding_syms_S2(1:512);
 
 save('waveform_STTD.mat', 'waveform_S1', 'waveform_S2', 'bits_S1', 'bits_S2', 'syms_S1', 'syms_S2');
 
-fprintf('Correlation S vs S2: %.4f\n', abs(mean(waveform_S1 .* conj(waveform_S2))));
 
 disp("Alternating between MIMO Streams Continuously... Press Ctrl+C to stop.");
 
@@ -83,8 +82,6 @@ silence2 = complex(zeros(7560, 1));
 tx_frame_S1 = [silence; waveform_S1; silence2];
 tx_frame_S2 = [silence2; silence; waveform_S2];
 
-% waiting_for_turn = complex(zeros(length(tx_frame_S1), 1));
-% 
 % %% 5. CONTINUOUS TRANSMISSION LOOP
 while true
     tx([tx_frame_S1, tx_frame_S2]);
