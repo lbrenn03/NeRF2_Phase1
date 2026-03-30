@@ -3,7 +3,7 @@ clear;
 % Adjust to match RX position
 x_lab = -1;
 y_lab = 6;
-orientation = 0;
+orientation = 45;
 
 % Adjust to match TX position
 tx_pos = [-1, 10, 0.875];
@@ -21,7 +21,7 @@ TotalSamples = round(Fs * CaptureTime);
 % -------------------------------------------------------------------------
 rxObj = comm.SDRuReceiver( ...
     'Platform',          'B210', ...
-    'SerialNum',         '34C78EF', ...
+    'SerialNum',         '34C78FD', ...
     'MasterClockRate',   30e6, ...
     'DecimationFactor',  60, ...
     'SamplesPerFrame',   TotalSamples, ...
@@ -59,9 +59,9 @@ raw_data.mimo        = false;
 raw_data.rx_orient   = orientation;
 
 if x_lab >= 0
-    filename = 'mimo_tx1_' + string(x_lab) + '_' + string(y_lab) + '.mat';
+    filename = 'mimo_tx1_' + string(x_lab) + '_' + string(y_lab) + '_' + string(orientation) + '.mat';
 else
-    filename = 'mimo_tx1_n1_' + string(y_lab) + '.mat';
+    filename = 'mimo_tx1_n1_' + string(y_lab) + '_' + string(orientation) + '.mat';
 end
 
 save(filename, 'raw_data'); % dev filename
