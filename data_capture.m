@@ -1,12 +1,12 @@
 clear;
 
 % Adjust to match RX position
-x_lab = -1;
-y_lab = 6;
-orientation = 45;
+x_lab = 14;
+y_lab = 11;
+orientation = 0;
 
-% Adjust to match TX position
-tx_pos = [-1, 10, 0.875];
+% Adjust to match TX position, ALSO UPDATE THE FILENAME TO TX#
+tx_pos = [13, 8, 0.875];
 
 
 %% -------------------------------------------------------------------------
@@ -59,11 +59,17 @@ raw_data.mimo        = false;
 raw_data.rx_orient   = orientation;
 
 if x_lab >= 0
-    filename = 'mimo_tx1_' + string(x_lab) + '_' + string(y_lab) + '_' + string(orientation) + '.mat';
+    filename = 'mimo_data/mimo_tx2_' + string(x_lab) + '_' + string(y_lab) + '_' + string(orientation) + '.mat';
 else
-    filename = 'mimo_tx1_n1_' + string(y_lab) + '_' + string(orientation) + '.mat';
+    filename = 'mimo_data/mimo_tx2_n1_' + string(y_lab) + '_' + string(orientation) + '.mat';
 end
 
-save(filename, 'raw_data'); % dev filename
+
+if not(isfile(filename))
+    save(filename, 'raw_data'); % dev filename
+    disp('File saved!');
+else
+    error("duplicate file name")
+end
 
 release(rxObj);
