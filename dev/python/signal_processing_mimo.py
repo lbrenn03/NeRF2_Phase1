@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from scipy.cluster.vq import kmeans2
 
 parser = argparse.ArgumentParser(description='NeRF2 offline receiver')
-parser.add_argument('--input',  default='test_close.mat', help='Input .mat file')
+parser.add_argument('--input',  default='sps5_sttd_medclose_data.mat', help='Input .mat file')
 parser.add_argument('--output', default='processed.mat',        help='Output .mat file')
 args = parser.parse_args()
 
@@ -31,11 +31,12 @@ ROLLOFF = 0.25
 SPAN    = 6
 
 NUM_PACKETS    = 10
-MIN_PEAK_DIST  = 40000
-MIN_PROM_FRAC  = 0.6
-
-pn_bits_S1 = np.array([1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,1,1,1,0,0,0,0,1,1,1,1,1,1,0,1,1,1,0,0,0,1,0,0,1,1,1,1,1,0,0,0,1,1,0,0,1,1,1,1,1,0,1,0,1,1,0,0,1,0,1,1,0,0,1,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,1,0,0,0,1,0,0,0,0,0,1,1,0,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,1,0,1,0,1,0,0,0,0,1,1,1,1,0,1,0,1,1,1,0,1,0,1,1,0,1,1,0,1,1,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,1,1,0,1,1,0,0,1,1,0,0,0,0,1,0,1,0,1,1,0,1,0,1,1,1,0,0,0,1,1,0,1,1,1,1,1,1,0,0,0,1,0,0,0,1,1,1,1,0,0,1,1,1,1,0,1,1,0,1,1,0,1,0,0,0,0,0,0,0,1,0,1,0,0,0,0,1,0,1,1,0,1,0,1,0,1,0,0,0,1,1,1,1,1,0,1,1,1,1,0,0,1,0,0,1,0,1,1,0,0,0,0,0,1,0,0,1,1,0,0,1,0,0,0,1,0,1,0,0,0,1,1,0,1,1,0,1,1,1,0,0,0,0,0,0,1,1,1,1,0,0,0,1,1,1,0,1,1,1,1,1,1,1,0,0,1,0,0,0,0,1,1,0,0,0,1,0,1,1,0,1,1,1,0,1,0,0,0,0,1,1,0,1,0,1,0,1,1,0,0,1,1,1,1,0,0,1,0,1,1,0,1,1,0,0,1,0,0,0,0,0,1,0,0,0,1,0,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,1,0,0,0,1,0,1,0,0,1,1,1,0,1,1,0,0,1,1,1,0,0,0,1,0,1,1,1,1,1,1,0,1,0,1,0,0,0,1,0,1,1,1,0,1,1,0,1,0,1,1,0,0,0,0,1,1,0,0,1,1,0,1,1,0,1,0,1,0,0,0,0,0,1,1,1,0,1,0,0,1,1,1,1,0,1,0,0,1,1,0,1,0,1,0,0,1,0,0,1,1,1,0,0,0,0,0,1,1,1,1,1,0,0,1,1,1,0,0,1,1,0,1,1,1,1,0,1,0,0,0,1,0,1,0,1,0,1,1,0,1,1,1,1,1,0,0,0,0,1,0,0,1,1,1,0,1,0,0,0,1,1,1,0,1,0,1,1,1,1,1,0,1,1,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,1,0,1,0,1,1,0,0,0,1,1,1,0,0,1,1,1,1,1,1,1,0,1,1,0,0,0,0,1,0,0,0,1,1,0,1,0,0,1,1,1,0,0,1,0,0,1,1,1,1,0,0,0,0,1,1,0,1,1,1,0,1,1,0,0,0,1,1,0,0,0,1,1,1,1,0,1,1,1,1,1,0,1,0,0,1,0,0,1,0,1,0,0,0,0,0,0,1,1,0,1,0,0,0,1,1,0,0,1,0,1,1,1,0,1,0,0,1,0,1,1,0,1,0,0,0,1,0,0,0,1,0,1,1,0,0,1,1,0,1,0,0,1,0,1,0,0,1,0,0,0,1,1,0,0,0,0,1,1,1,0,1,1,0,1,1,1,1,0,0,0,0,0,1,0,1,1,1,0,0,1,0,1,0,1,1,1,0,0,1,1,1,0,1,1,1,0,1,1,1,0,0,1,1,0,0,1,1,1,0,1,0,1,0,1,1,1,0,1,1,1,1,0,1,1,0,0,1,0,1,0,0,0,1,0,0,1,1,0,1,1,0,0,0,1,0,0,0,0,1,1,1,0,0,1,0,1,1,1,1,1,0,0,1,0,1,0,0,1,1,0,0,1,1,0,0,1,0,1,0,1,0,1,0,0,1,1,1,1,1,1,0,0,1,1,0,0,0,1,1,0,1,0,1,1,1,1,0,0,1,1,0,1,0,1,1,0,1,0,0,1,1,0,0,0,1,0,0,1,0,1,1,1,0,0,0,0,1,0,1,1,1,1,0,1,0,1,0,1,0,1,0,1,1,1,1,1,1,1,1,0,1,0,0,0,0,0,1,0,1,0,1,0,0,1,0,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1,0,1,1,1,0,1,0,1,0,0,1,1,0,1,1,1,0,0,1,0,0,0,1,1,1,0,0,0,0], dtype=np.uint8)
-pn_bits_S2 = np.array([0,1,0,1,0,1,0,1,0,1,1,1,1,1,1,1,1,0,1,0,0,0,0,0,1,0,1,0,1,0,0,1,0,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1,0,1,1,1,0,1,0,1,0,0,1,1,0,1,1,1,0,0,1,0,0,0,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,1,1,1,0,0,0,0,1,1,1,1,1,1,0,1,1,1,0,0,0,1,0,0,1,1,1,1,1,0,0,0,1,1,0,0,1,1,1,1,1,0,1,0,1,1,0,0,1,0,1,1,0,0,1,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,1,0,0,0,1,0,0,0,0,0,1,1,0,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,1,0,1,0,1,0,0,0,0,1,1,1,1,0,1,0,1,1,1,0,1,0,1,1,0,1,1,0,1,1,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,1,1,0,1,1,0,0,1,1,0,0,0,0,1,0,1,0,1,1,0,1,0,1,1,1,0,0,0,1,1,0,1,1,1,1,1,1,0,0,0,1,0,0,0,1,1,1,1,0,0,1,1,1,1,0,1,1,0,1,1,0,1,0,0,0,0,0,0,0,1,0,1,0,0,0,0,1,0,1,1,0,1,0,1,0,1,0,0,0,1,1,1,1,1,0,1,1,1,1,0,0,1,0,0,1,0,1,1,0,0,0,0,0,1,0,0,1,1,0,0,1,0,0,0,1,0,1,0,0,0,1,1,0,1,1,0,1,1,1,0,0,0,0,0,0,1,1,1,1,0,0,0,1,1,1,0,1,1,1,1,1,1,1,0,0,1,0,0,0,0,1,1,0,0,0,1,0,1,1,0,1,1,1,0,1,0,0,0,0,1,1,0,1,0,1,0,1,1,0,0,1,1,1,1,0,0,1,0,1,1,0,1,1,0,0,1,0,0,0,0,0,1,0,0,0,1,0,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,1,0,0,0,1,0,1,0,0,1,1,1,0,1,1,0,0,1,1,1,0,0,0,1,0,1,1,1,1,1,1,0,1,0,1,0,0,0,1,0,1,1,1,0,1,1,0,1,0,1,1,0,0,0,0,1,1,0,0,1,1,0,1,1,0,1,0,1,0,0,0,0,0,1,1,1,0,1,0,0,1,1,1,1,0,1,0,0,1,1,0,1,0,1,0,0,1,0,0,1,1,1,0,0,0,0,0,1,1,1,1,1,0,0,1,1,1,0,0,1,1,0,1,1,1,1,0,1,0,0,0,1,0,1,0,1,0,1,1,0,1,1,1,1,1,0,0,0,0,1,0,0,1,1,1,0,1,0,0,0,1,1,1,0,1,0,1,1,1,1,1,0,1,1,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,1,0,1,0,1,1,0,0,0,1,1,1,0,0,1,1,1,1,1,1,1,0,1,1,0,0,0,0,1,0,0,0,1,1,0,1,0,0,1,1,1,0,0,1,0,0,1,1,1,1,0,0,0,0,1,1,0,1,1,1,0,1,1,0,0,0,1,1,0,0,0,1,1,1,1,0,1,1,1,1,1,0,1,0,0,1,0,0,1,0,1,0,0,0,0,0,0,1,1,0,1,0,0,0,1,1,0,0,1,0,1,1,1,0,1,0,0,1,0,1,1,0,1,0,0,0,1,0,0,0,1,0,1,1,0,0,1,1,0,1,0,0,1,0,1,0,0,1,0,0,0,1,1,0,0,0,0,1,1,1,0,1,1,0,1,1,1,1,0,0,0,0,0,1,0,1,1,1,0,0,1,0,1,0,1,1,1,0,0,1,1,1,0,1,1,1,0,1,1,1,0,0,1,1,0,0,1,1,1,0,1,0,1,0,1,1,1,0,1,1,1,1,0,1,1,0,0,1,0,1,0,0,0,1,0,0,1,1,0,1,1,0,0,0,1,0,0,0,0,1,1,1,0,0,1,0,1,1,1,1,1,0,0,1,0,1,0,0,1,1,0,0,1,1,0,0,1,0,1,0,1,0,1,0,0,1,1,1,1,1,1,0,0,1,1,0,0,0,1,1,0,1,0,1,1,1,1,0,0,1,1,0,1,0,1,1,0,1,0,0,1,1,0,0,0,1,0,0,1,0,1,1,1,0,0,0,0,1,0,1,1,1,1,0], dtype=np.uint8)
+MIN_PEAK_DIST  = 25000
+MIN_PROM_FRAC  = 0.0
+pn_bits_S1 = sio.loadmat('waveform_STTD.mat')['bits_S1'].ravel()
+pn_bits_S2 = sio.loadmat('waveform_STTD.mat')['bits_S2'].ravel()
+# pn_bits_S1 = np.array([1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,1,1,1,0,0,0,0,1,1,1,1,1,1,0,1,1,1,0,0,0,1,0,0,1,1,1,1,1,0,0,0,1,1,0,0,1,1,1,1,1,0,1,0,1,1,0,0,1,0,1,1,0,0,1,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,1,0,0,0,1,0,0,0,0,0,1,1,0,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,1,0,1,0,1,0,0,0,0,1,1,1,1,0,1,0,1,1,1,0,1,0,1,1,0,1,1,0,1,1,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,1,1,0,1,1,0,0,1,1,0,0,0,0,1,0,1,0,1,1,0,1,0,1,1,1,0,0,0,1,1,0,1,1,1,1,1,1,0,0,0,1,0,0,0,1,1,1,1,0,0,1,1,1,1,0,1,1,0,1,1,0,1,0,0,0,0,0,0,0,1,0,1,0,0,0,0,1,0,1,1,0,1,0,1,0,1,0,0,0,1,1,1,1,1,0,1,1,1,1,0,0,1,0,0,1,0,1,1,0,0,0,0,0,1,0,0,1,1,0,0,1,0,0,0,1,0,1,0,0,0,1,1,0,1,1,0,1,1,1,0,0,0,0,0,0,1,1,1,1,0,0,0,1,1,1,0,1,1,1,1,1,1,1,0,0,1,0,0,0,0,1,1,0,0,0,1,0,1,1,0,1,1,1,0,1,0,0,0,0,1,1,0,1,0,1,0,1,1,0,0,1,1,1,1,0,0,1,0,1,1,0,1,1,0,0,1,0,0,0,0,0,1,0,0,0,1,0,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,1,0,0,0,1,0,1,0,0,1,1,1,0,1,1,0,0,1,1,1,0,0,0,1,0,1,1,1,1,1,1,0,1,0,1,0,0,0,1,0,1,1,1,0,1,1,0,1,0,1,1,0,0,0,0,1,1,0,0,1,1,0,1,1,0,1,0,1,0,0,0,0,0,1,1,1,0,1,0,0,1,1,1,1,0,1,0,0,1,1,0,1,0,1,0,0,1,0,0,1,1,1,0,0,0,0,0,1,1,1,1,1,0,0,1,1,1,0,0,1,1,0,1,1,1,1,0,1,0,0,0,1,0,1,0,1,0,1,1,0,1,1,1,1,1,0,0,0,0,1,0,0,1,1,1,0,1,0,0,0,1,1,1,0,1,0,1,1,1,1,1,0,1,1,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,1,0,1,0,1,1,0,0,0,1,1,1,0,0,1,1,1,1,1,1,1,0,1,1,0,0,0,0,1,0,0,0,1,1,0,1,0,0,1,1,1,0,0,1,0,0,1,1,1,1,0,0,0,0,1,1,0,1,1,1,0,1,1,0,0,0,1,1,0,0,0,1,1,1,1,0,1,1,1,1,1,0,1,0,0,1,0,0,1,0,1,0,0,0,0,0,0,1,1,0,1,0,0,0,1,1,0,0,1,0,1,1,1,0,1,0,0,1,0,1,1,0,1,0,0,0,1,0,0,0,1,0,1,1,0,0,1,1,0,1,0,0,1,0,1,0,0,1,0,0,0,1,1,0,0,0,0,1,1,1,0,1,1,0,1,1,1,1,0,0,0,0,0,1,0,1,1,1,0,0,1,0,1,0,1,1,1,0,0,1,1,1,0,1,1,1,0,1,1,1,0,0,1,1,0,0,1,1,1,0,1,0,1,0,1,1,1,0,1,1,1,1,0,1,1,0,0,1,0,1,0,0,0,1,0,0,1,1,0,1,1,0,0,0,1,0,0,0,0,1,1,1,0,0,1,0,1,1,1,1,1,0,0,1,0,1,0,0,1,1,0,0,1,1,0,0,1,0,1,0,1,0,1,0,0,1,1,1,1,1,1,0,0,1,1,0,0,0,1,1,0,1,0,1,1,1,1,0,0,1,1,0,1,0,1,1,0,1,0,0,1,1,0,0,0,1,0,0,1,0,1,1,1,0,0,0,0,1,0,1,1,1,1,0,1,0,1,0,1,0,1,0,1,1,1,1,1,1,1,1,0,1,0,0,0,0,0,1,0,1,0,1,0,0,1,0,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1,0,1,1,1,0,1,0,1,0,0,1,1,0,1,1,1,0,0,1,0,0,0,1,1,1,0,0,0,0], dtype=np.uint8)
+# pn_bits_S2 = np.array([0,1,0,1,0,1,0,1,0,1,1,1,1,1,1,1,1,0,1,0,0,0,0,0,1,0,1,0,1,0,0,1,0,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1,0,1,1,1,0,1,0,1,0,0,1,1,0,1,1,1,0,0,1,0,0,0,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,1,1,1,0,0,0,0,1,1,1,1,1,1,0,1,1,1,0,0,0,1,0,0,1,1,1,1,1,0,0,0,1,1,0,0,1,1,1,1,1,0,1,0,1,1,0,0,1,0,1,1,0,0,1,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,1,0,0,0,1,0,0,0,0,0,1,1,0,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,1,0,1,0,1,0,0,0,0,1,1,1,1,0,1,0,1,1,1,0,1,0,1,1,0,1,1,0,1,1,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,1,1,0,1,1,0,0,1,1,0,0,0,0,1,0,1,0,1,1,0,1,0,1,1,1,0,0,0,1,1,0,1,1,1,1,1,1,0,0,0,1,0,0,0,1,1,1,1,0,0,1,1,1,1,0,1,1,0,1,1,0,1,0,0,0,0,0,0,0,1,0,1,0,0,0,0,1,0,1,1,0,1,0,1,0,1,0,0,0,1,1,1,1,1,0,1,1,1,1,0,0,1,0,0,1,0,1,1,0,0,0,0,0,1,0,0,1,1,0,0,1,0,0,0,1,0,1,0,0,0,1,1,0,1,1,0,1,1,1,0,0,0,0,0,0,1,1,1,1,0,0,0,1,1,1,0,1,1,1,1,1,1,1,0,0,1,0,0,0,0,1,1,0,0,0,1,0,1,1,0,1,1,1,0,1,0,0,0,0,1,1,0,1,0,1,0,1,1,0,0,1,1,1,1,0,0,1,0,1,1,0,1,1,0,0,1,0,0,0,0,0,1,0,0,0,1,0,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,1,0,0,0,1,0,1,0,0,1,1,1,0,1,1,0,0,1,1,1,0,0,0,1,0,1,1,1,1,1,1,0,1,0,1,0,0,0,1,0,1,1,1,0,1,1,0,1,0,1,1,0,0,0,0,1,1,0,0,1,1,0,1,1,0,1,0,1,0,0,0,0,0,1,1,1,0,1,0,0,1,1,1,1,0,1,0,0,1,1,0,1,0,1,0,0,1,0,0,1,1,1,0,0,0,0,0,1,1,1,1,1,0,0,1,1,1,0,0,1,1,0,1,1,1,1,0,1,0,0,0,1,0,1,0,1,0,1,1,0,1,1,1,1,1,0,0,0,0,1,0,0,1,1,1,0,1,0,0,0,1,1,1,0,1,0,1,1,1,1,1,0,1,1,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,1,0,1,0,1,1,0,0,0,1,1,1,0,0,1,1,1,1,1,1,1,0,1,1,0,0,0,0,1,0,0,0,1,1,0,1,0,0,1,1,1,0,0,1,0,0,1,1,1,1,0,0,0,0,1,1,0,1,1,1,0,1,1,0,0,0,1,1,0,0,0,1,1,1,1,0,1,1,1,1,1,0,1,0,0,1,0,0,1,0,1,0,0,0,0,0,0,1,1,0,1,0,0,0,1,1,0,0,1,0,1,1,1,0,1,0,0,1,0,1,1,0,1,0,0,0,1,0,0,0,1,0,1,1,0,0,1,1,0,1,0,0,1,0,1,0,0,1,0,0,0,1,1,0,0,0,0,1,1,1,0,1,1,0,1,1,1,1,0,0,0,0,0,1,0,1,1,1,0,0,1,0,1,0,1,1,1,0,0,1,1,1,0,1,1,1,0,1,1,1,0,0,1,1,0,0,1,1,1,0,1,0,1,0,1,1,1,0,1,1,1,1,0,1,1,0,0,1,0,1,0,0,0,1,0,0,1,1,0,1,1,0,0,0,1,0,0,0,0,1,1,1,0,0,1,0,1,1,1,1,1,0,0,1,0,1,0,0,1,1,0,0,1,1,0,0,1,0,1,0,1,0,1,0,0,1,1,1,1,1,1,0,0,1,1,0,0,0,1,1,0,1,0,1,1,1,1,0,0,1,1,0,1,0,1,1,0,1,0,0,1,1,0,0,0,1,0,0,1,0,1,1,1,0,0,0,0,1,0,1,1,1,1,0], dtype=np.uint8)
 
 
 def qpsk_modulate(bits, phase_offset=np.pi / 4):
@@ -167,7 +168,7 @@ def process_packets(valid_packets, rxBuffer, ref_syms, pn_bits):
 
     for p, pkt in enumerate(valid_packets):
         s = pkt['startIdx']
-        extraction_limit = min(s + N_PKT + (SPAN * SPS), rxBuffer.shape[0])
+        extraction_limit = min(s + N_PKT - (SPAN // 2 * SPS), rxBuffer.shape[0])
         pkt_ant1 = rxBuffer[s:extraction_limit, 0]
         pkt_ant2 = rxBuffer[s:extraction_limit, 1]
 
@@ -181,39 +182,45 @@ def process_packets(valid_packets, rxBuffer, ref_syms, pn_bits):
         mf_ant1 = rrc_rx_filter(clean_ant1, H_rrc, SPS, ref_syms=ref_syms)
         mf_ant2 = rrc_rx_filter(clean_ant2, H_rrc, SPS, ref_syms=ref_syms)
 
-        fine_corr1, fine_lags = xcorr(mf_ant1, ref_syms)
-        fine_idx              = int(np.argmax(np.abs(fine_corr1)))
-        los_phase_ref         = np.angle(fine_corr1[fine_idx])
+        fine_corr1, fine_lags1 = xcorr(mf_ant1, ref_syms)
+        fine_idx1              = int(np.argmax(np.abs(fine_corr1)))
+        los_phase_ref         = np.angle(fine_corr1[fine_idx1])
         phase_anchor          = np.exp(-1j * los_phase_ref)
+
+        fine_corr2, fine_lags2 = xcorr(mf_ant2, ref_syms)
+        fine_idx2              = int(np.argmax(np.abs(fine_corr2)))
 
         mf_ant1_anchored = mf_ant1 * phase_anchor
         mf_ant2_anchored = mf_ant2 * phase_anchor
 
-        fine_timing_offset = int(fine_lags[fine_idx])
-        start_idx = max(0, min(fine_timing_offset, len(mf_ant1) - NUM_REF_SYMS))
-        end_idx   = start_idx + NUM_REF_SYMS
+        fine_timing_offset1 = int(fine_lags1[fine_idx1])
+        start_idx1 = max(0, min(fine_timing_offset1, len(mf_ant1) - NUM_REF_SYMS))
+        end_idx1   = start_idx1 + NUM_REF_SYMS
+        fine_timing_offset2 = int(fine_lags2[fine_idx2])
+        start_idx2 = max(0, min(fine_timing_offset2, len(mf_ant2) - NUM_REF_SYMS))
+        end_idx2   = start_idx2 + NUM_REF_SYMS
 
-        syms_ant1 = mf_ant1_anchored[start_idx:end_idx]
-        syms_ant2 = mf_ant2_anchored[start_idx:end_idx]
+        syms_ant1 = mf_ant1_anchored[start_idx1:end_idx1]
+        syms_ant2 = mf_ant2_anchored[start_idx2:end_idx2]
 
-        symbol_indices_ant1 = np.where(np.abs(syms_ant1) > 0.5 * np.mean(np.abs(syms_ant1)))[0]
-        symbol_indices_ant2 = np.where(np.abs(syms_ant2) > 0.5 * np.mean(np.abs(syms_ant2)))[0]
+        symbol_indices_ant1 = range(len(syms_ant1))#np.where(np.abs(syms_ant1) > 0.5 * np.mean(np.abs(syms_ant1)))[0]
+        symbol_indices_ant2 = range(len(syms_ant2))#np.where(np.abs(syms_ant2) > 0.5 * np.mean(np.abs(syms_ant2)))[0]
 
         syms_ant1 = syms_ant1[symbol_indices_ant1]
         syms_ant2 = syms_ant2[symbol_indices_ant2]
 
-        if p < 5:  # First 5 packets
-            # Plot symbol magnitudes vs symbol index
-            plt.figure(figsize=(10, 4))
-            plt.plot(np.arange(len(syms_ant1)), np.abs(syms_ant1), marker='o', linestyle='-', label='Antenna 1')
-            plt.plot(np.arange(len(syms_ant2)), np.abs(syms_ant2), marker='x', linestyle='-', label='Antenna 2')
-            plt.xlabel('Symbol Index within Packet')
-            plt.ylabel('Magnitude')
-            plt.title(f'Packet {p} Symbol Magnitudes')
-            plt.grid(True)
-            plt.legend()
-            plt.tight_layout()
-            plt.show()
+        # if p < 5:  # First 5 packets
+        #     # Plot symbol magnitudes vs symbol index
+        #     plt.figure(figsize=(10, 4))
+        #     plt.plot(np.arange(len(syms_ant1)), np.abs(syms_ant1), marker='o', linestyle='-', label='Antenna 1')
+        #     plt.plot(np.arange(len(syms_ant2)), np.abs(syms_ant2), marker='x', linestyle='-', label='Antenna 2')
+        #     plt.xlabel('Symbol Index within Packet')
+        #     plt.ylabel('Magnitude')
+        #     plt.title(f'Packet {p} Symbol Magnitudes')
+        #     plt.grid(True)
+        #     plt.legend()
+        #     plt.tight_layout()
+        #     plt.show()
 
         all_syms_ant1[:, p] = fit_to(syms_ant1, NUM_REF_SYMS)
         all_syms_ant2[:, p] = fit_to(syms_ant2, NUM_REF_SYMS)
@@ -227,21 +234,21 @@ def process_packets(valid_packets, rxBuffer, ref_syms, pn_bits):
         ber1 = n_err1 / L
         ber2 = n_err2 / L
 
-        if (ber1 < 0.01) and (ber2 < 0.01):
-            csi1 = np.mean(syms_ant1 / ref_syms[symbol_indices_ant1])
-            csi2 = np.mean(syms_ant2 / ref_syms[symbol_indices_ant2])
-            if p == 0:
-                print(f"CSI1 {csi1}  CSI2 {csi2}")
-            results.append({
-                'ber1':      ber1,
-                'ber2':      ber2,
-                'cfo':       est_cfo,
-                'csi1':      csi1,
-                'csi2':      csi2,
-                'rel_phase': np.angle(csi2),
-                'peakVal':   pkt['peakVal'],
-                'peakTime':  pkt['peakTime'],
-            })
+        
+        csi1 = np.mean(syms_ant1 / ref_syms[symbol_indices_ant1])
+        csi2 = np.mean(syms_ant2 / ref_syms[symbol_indices_ant2])
+        if p == 0:
+            print(f"CSI1 {csi1}  CSI2 {csi2}")
+        results.append({
+            'ber1':      ber1,
+            'ber2':      ber2,
+            'cfo':       est_cfo,
+            'csi1':      csi1,
+            'csi2':      csi2,
+            'rel_phase': np.angle(csi2),
+            'peakVal':   pkt['peakVal'],
+            'peakTime':  pkt['peakTime'],
+        })
 
     return all_syms_ant1, all_syms_ant2, results
 
@@ -307,20 +314,22 @@ def print_summary(label, results):
 # 2.  BUILD REFERENCE SIGNALS
 # ==============================================================================
 H_rrc = sio.loadmat("rrcTx_coeffs.mat")["coeffs"].ravel()
+# H_rrc = sio.loadmat("rrcTx_coeffs.mat")["coeffs"]['Numerator'].ravel()[0].ravel().astype(np.float64)
 print(f"\nRRC coeffs: sum={np.sum(H_rrc):.6f} (should be ≈5.0 for RX)")
 print(f"RRC energy: {np.sum(np.abs(H_rrc)**2):.6f}")
 
 ref_syms_S1  = qpsk_modulate(pn_bits_S1)
 ref_syms_S2  = qpsk_modulate(pn_bits_S2)
 NUM_REF_SYMS = len(ref_syms_S1)
-print("LOOK AT", len(ref_syms_S1), len(ref_syms_S2))
 
-ref_sig_S1 = sio.loadmat("reference_sig.mat")["reference_sig"].ravel()
-ref_sig_S2 = sio.loadmat('reference_sig_mimo.mat')['waveform_S2'].ravel()
+ref_sig_S1 = sio.loadmat('waveform_STTD.mat')['waveform_S1'].ravel()
+ref_sig_S2 = sio.loadmat('waveform_STTD.mat')['waveform_S2'].ravel()
+# ref_sig_S1 = sio.loadmat("reference_sig.mat")["reference_sig"].ravel()
+# ref_sig_S2 = sio.loadmat('reference_sig_mimo.mat')['waveform_S2'].ravel()
 
 GROUP_DELAY = (SPAN * SPS) // 2
-ref_sig_S1  = ref_sig_S1[GROUP_DELAY:-GROUP_DELAY]
-ref_sig_S2  = ref_sig_S2[GROUP_DELAY:-GROUP_DELAY]
+ref_sig_S1  = ref_sig_S1[GROUP_DELAY:]
+ref_sig_S2  = ref_sig_S2[GROUP_DELAY:]
 
 N_PKT = len(ref_sig_S1)
 print(f"Reference signal: {N_PKT} samples | {NUM_REF_SYMS} symbols")
@@ -341,6 +350,7 @@ rxBuffer = rxBuffer - np.mean(rxBuffer, axis=0)
 if rxBuffer.shape[0] < TotalSamples:
     print(f"WARNING: Incomplete capture ({rxBuffer.shape[0]} < {TotalSamples} samples)")
 
+
 # ==============================================================================
 # 4.  PACKET DETECTION
 # ==============================================================================
@@ -356,12 +366,12 @@ valid_packets_S1 = collect_valid_packets(lags_S1, pks_locs_S1, pks_vals_S1, N_PK
 valid_packets_S2 = collect_valid_packets(lags_S2, pks_locs_S2, pks_vals_S2, N_PKT, rxBuffer.shape[0])
 
 if not valid_packets_S1:
-    sys.exit("❌  No valid S1 packets found above threshold.")
+    sys.exit("No valid S1 packets found above threshold.")
 if not valid_packets_S2:
-    sys.exit("❌  No valid S2 packets found above threshold.")
+    sys.exit("No valid S2 packets found above threshold.")
 
-print(f"✅  Found {len(valid_packets_S1)} valid S1 packets")
-print(f"✅  Found {len(valid_packets_S2)} valid S2 packets")
+print(f"Found {len(valid_packets_S1)} valid S1 packets")
+print(f"Found {len(valid_packets_S2)} valid S2 packets")
 print(f"S1 start indices: {[p['startIdx'] for p in valid_packets_S1]}")
 print(f"S2 start indices: {[p['startIdx'] for p in valid_packets_S2]}\n")
 
