@@ -1,12 +1,12 @@
 clear;
 
 % Adjust to match RX position
-x_lab = 0;
-y_lab = 0;
-orientation = 0;
+x_lab = 1.5;
+y_lab = 8.5;
+orientation = 135;
 
 % Adjust to match TX position, ALSO UPDATE THE FILENAME TO TX#
-tx_pos = [6, 5, 1.021];
+tx_pos = [-1, 10, 0.875];
 
 
 %% -------------------------------------------------------------------------
@@ -66,7 +66,7 @@ end
 
 % if you f-up a file then just uncomment this and ignore the error
 % generated
-% save(filename, 'raw_data');
+%save(filename, 'raw_data');
 % disp('File saved!');
 
 if not(isfile(filename))

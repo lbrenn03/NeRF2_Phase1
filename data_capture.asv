@@ -1,12 +1,12 @@
 clear;
 
 % Adjust to match RX position
-x_lab = 14;
-y_lab = 11;
-orientation = 0;
+x_lab = 1.5;
+y_lab = 7.5;
+orientation = 90;
 
 % Adjust to match TX position, ALSO UPDATE THE FILENAME TO TX#
-tx_pos = [13, 8, 0.875];
+tx_pos = [-1, 10, 0.875];
 
 
 %% -------------------------------------------------------------------------
@@ -57,13 +57,17 @@ raw_data.rx_pos      = [x_lab, y_lab, 0.571];
 raw_data.tx_pos      = tx_pos;
 raw_data.mimo        = false;
 raw_data.rx_orient   = orientation;
-
+    
 if x_lab >= 0
     filename = 'mimo_data/mimo_tx3_' + string(x_lab) + '_' + string(y_lab) + '_' + string(orientation) + '.mat';
 else
     filename = 'mimo_data/mimo_tx3_n1_' + string(y_lab) + '_' + string(orientation) + '.mat';
 end
 
+% if you f-up a file then just uncomment this and ignore the error
+% generated
+%save(filename, 'raw_data');
+% disp('File saved!');
 
 if not(isfile(filename))
     save(filename, 'raw_data'); % dev filename
