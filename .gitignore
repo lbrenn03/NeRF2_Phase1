@@ -1,5 +1,6 @@
 localdata/
 mimo_data/
+mimo_test_data/
 Pilot_Data_1_processed/
 .DS_Store
 **/__pycache__/
