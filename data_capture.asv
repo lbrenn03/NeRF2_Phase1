@@ -1,9 +1,9 @@
 clear;
 
 % Adjust to match RX position
-x_lab = 5.5;
-y_lab = 1.5;
-orientation = 0;
+x_lab = 2.5;
+y_lab = 6.5;
+orientation = 135;
 
 % Adjust to match TX position, ALSO UPDATE THE FILENAME TO TX#
 tx_pos = [6, 5, 1.021];
@@ -76,7 +76,6 @@ if not(isfile(filename))
     save(filename, 'raw_data'); % dev filename
     disp('File saved!');
 else
-
     error("duplicate file name")
 end
 
