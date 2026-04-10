@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from scipy.cluster.vq import kmeans2
 
 parser = argparse.ArgumentParser(description='NeRF2 offline receiver')
-parser.add_argument('--input',  default='sps5_sttd_medclose_data.mat', help='Input .mat file')
+parser.add_argument('--input',  default='mimo_tx3_10_9_90.mat', help='Input .mat file')
 parser.add_argument('--output', default='processed.mat',        help='Output .mat file')
 args = parser.parse_args()
 
@@ -33,10 +33,9 @@ SPAN    = 6
 NUM_PACKETS    = 10
 MIN_PEAK_DIST  = 25000
 MIN_PROM_FRAC  = 0.0
-pn_bits_S1 = sio.loadmat('waveform_STTD.mat')['bits_S1'].ravel()
-pn_bits_S2 = sio.loadmat('waveform_STTD.mat')['bits_S2'].ravel()
-# pn_bits_S1 = np.array([1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,1,1,1,0,0,0,0,1,1,1,1,1,1,0,1,1,1,0,0,0,1,0,0,1,1,1,1,1,0,0,0,1,1,0,0,1,1,1,1,1,0,1,0,1,1,0,0,1,0,1,1,0,0,1,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,1,0,0,0,1,0,0,0,0,0,1,1,0,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,1,0,1,0,1,0,0,0,0,1,1,1,1,0,1,0,1,1,1,0,1,0,1,1,0,1,1,0,1,1,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,1,1,0,1,1,0,0,1,1,0,0,0,0,1,0,1,0,1,1,0,1,0,1,1,1,0,0,0,1,1,0,1,1,1,1,1,1,0,0,0,1,0,0,0,1,1,1,1,0,0,1,1,1,1,0,1,1,0,1,1,0,1,0,0,0,0,0,0,0,1,0,1,0,0,0,0,1,0,1,1,0,1,0,1,0,1,0,0,0,1,1,1,1,1,0,1,1,1,1,0,0,1,0,0,1,0,1,1,0,0,0,0,0,1,0,0,1,1,0,0,1,0,0,0,1,0,1,0,0,0,1,1,0,1,1,0,1,1,1,0,0,0,0,0,0,1,1,1,1,0,0,0,1,1,1,0,1,1,1,1,1,1,1,0,0,1,0,0,0,0,1,1,0,0,0,1,0,1,1,0,1,1,1,0,1,0,0,0,0,1,1,0,1,0,1,0,1,1,0,0,1,1,1,1,0,0,1,0,1,1,0,1,1,0,0,1,0,0,0,0,0,1,0,0,0,1,0,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,1,0,0,0,1,0,1,0,0,1,1,1,0,1,1,0,0,1,1,1,0,0,0,1,0,1,1,1,1,1,1,0,1,0,1,0,0,0,1,0,1,1,1,0,1,1,0,1,0,1,1,0,0,0,0,1,1,0,0,1,1,0,1,1,0,1,0,1,0,0,0,0,0,1,1,1,0,1,0,0,1,1,1,1,0,1,0,0,1,1,0,1,0,1,0,0,1,0,0,1,1,1,0,0,0,0,0,1,1,1,1,1,0,0,1,1,1,0,0,1,1,0,1,1,1,1,0,1,0,0,0,1,0,1,0,1,0,1,1,0,1,1,1,1,1,0,0,0,0,1,0,0,1,1,1,0,1,0,0,0,1,1,1,0,1,0,1,1,1,1,1,0,1,1,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,1,0,1,0,1,1,0,0,0,1,1,1,0,0,1,1,1,1,1,1,1,0,1,1,0,0,0,0,1,0,0,0,1,1,0,1,0,0,1,1,1,0,0,1,0,0,1,1,1,1,0,0,0,0,1,1,0,1,1,1,0,1,1,0,0,0,1,1,0,0,0,1,1,1,1,0,1,1,1,1,1,0,1,0,0,1,0,0,1,0,1,0,0,0,0,0,0,1,1,0,1,0,0,0,1,1,0,0,1,0,1,1,1,0,1,0,0,1,0,1,1,0,1,0,0,0,1,0,0,0,1,0,1,1,0,0,1,1,0,1,0,0,1,0,1,0,0,1,0,0,0,1,1,0,0,0,0,1,1,1,0,1,1,0,1,1,1,1,0,0,0,0,0,1,0,1,1,1,0,0,1,0,1,0,1,1,1,0,0,1,1,1,0,1,1,1,0,1,1,1,0,0,1,1,0,0,1,1,1,0,1,0,1,0,1,1,1,0,1,1,1,1,0,1,1,0,0,1,0,1,0,0,0,1,0,0,1,1,0,1,1,0,0,0,1,0,0,0,0,1,1,1,0,0,1,0,1,1,1,1,1,0,0,1,0,1,0,0,1,1,0,0,1,1,0,0,1,0,1,0,1,0,1,0,0,1,1,1,1,1,1,0,0,1,1,0,0,0,1,1,0,1,0,1,1,1,1,0,0,1,1,0,1,0,1,1,0,1,0,0,1,1,0,0,0,1,0,0,1,0,1,1,1,0,0,0,0,1,0,1,1,1,1,0,1,0,1,0,1,0,1,0,1,1,1,1,1,1,1,1,0,1,0,0,0,0,0,1,0,1,0,1,0,0,1,0,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1,0,1,1,1,0,1,0,1,0,0,1,1,0,1,1,1,0,0,1,0,0,0,1,1,1,0,0,0,0], dtype=np.uint8)
-# pn_bits_S2 = np.array([0,1,0,1,0,1,0,1,0,1,1,1,1,1,1,1,1,0,1,0,0,0,0,0,1,0,1,0,1,0,0,1,0,1,1,1,1,0,0,0,1,0,1,0,1,1,1,1,0,1,1,1,0,1,0,1,0,0,1,1,0,1,1,1,0,0,1,0,0,0,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,1,1,1,0,0,0,0,1,1,1,1,1,1,0,1,1,1,0,0,0,1,0,0,1,1,1,1,1,0,0,0,1,1,0,0,1,1,1,1,1,0,1,0,1,1,0,0,1,0,1,1,0,0,1,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,1,0,0,0,1,0,0,0,0,0,1,1,0,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,1,0,1,0,1,0,0,0,0,1,1,1,1,0,1,0,1,1,1,0,1,0,1,1,0,1,1,0,1,1,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,1,1,0,1,1,0,0,1,1,0,0,0,0,1,0,1,0,1,1,0,1,0,1,1,1,0,0,0,1,1,0,1,1,1,1,1,1,0,0,0,1,0,0,0,1,1,1,1,0,0,1,1,1,1,0,1,1,0,1,1,0,1,0,0,0,0,0,0,0,1,0,1,0,0,0,0,1,0,1,1,0,1,0,1,0,1,0,0,0,1,1,1,1,1,0,1,1,1,1,0,0,1,0,0,1,0,1,1,0,0,0,0,0,1,0,0,1,1,0,0,1,0,0,0,1,0,1,0,0,0,1,1,0,1,1,0,1,1,1,0,0,0,0,0,0,1,1,1,1,0,0,0,1,1,1,0,1,1,1,1,1,1,1,0,0,1,0,0,0,0,1,1,0,0,0,1,0,1,1,0,1,1,1,0,1,0,0,0,0,1,1,0,1,0,1,0,1,1,0,0,1,1,1,1,0,0,1,0,1,1,0,1,1,0,0,1,0,0,0,0,0,1,0,0,0,1,0,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,1,0,0,0,1,0,1,0,0,1,1,1,0,1,1,0,0,1,1,1,0,0,0,1,0,1,1,1,1,1,1,0,1,0,1,0,0,0,1,0,1,1,1,0,1,1,0,1,0,1,1,0,0,0,0,1,1,0,0,1,1,0,1,1,0,1,0,1,0,0,0,0,0,1,1,1,0,1,0,0,1,1,1,1,0,1,0,0,1,1,0,1,0,1,0,0,1,0,0,1,1,1,0,0,0,0,0,1,1,1,1,1,0,0,1,1,1,0,0,1,1,0,1,1,1,1,0,1,0,0,0,1,0,1,0,1,0,1,1,0,1,1,1,1,1,0,0,0,0,1,0,0,1,1,1,0,1,0,0,0,1,1,1,0,1,0,1,1,1,1,1,0,1,1,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,1,0,1,0,1,1,0,0,0,1,1,1,0,0,1,1,1,1,1,1,1,0,1,1,0,0,0,0,1,0,0,0,1,1,0,1,0,0,1,1,1,0,0,1,0,0,1,1,1,1,0,0,0,0,1,1,0,1,1,1,0,1,1,0,0,0,1,1,0,0,0,1,1,1,1,0,1,1,1,1,1,0,1,0,0,1,0,0,1,0,1,0,0,0,0,0,0,1,1,0,1,0,0,0,1,1,0,0,1,0,1,1,1,0,1,0,0,1,0,1,1,0,1,0,0,0,1,0,0,0,1,0,1,1,0,0,1,1,0,1,0,0,1,0,1,0,0,1,0,0,0,1,1,0,0,0,0,1,1,1,0,1,1,0,1,1,1,1,0,0,0,0,0,1,0,1,1,1,0,0,1,0,1,0,1,1,1,0,0,1,1,1,0,1,1,1,0,1,1,1,0,0,1,1,0,0,1,1,1,0,1,0,1,0,1,1,1,0,1,1,1,1,0,1,1,0,0,1,0,1,0,0,0,1,0,0,1,1,0,1,1,0,0,0,1,0,0,0,0,1,1,1,0,0,1,0,1,1,1,1,1,0,0,1,0,1,0,0,1,1,0,0,1,1,0,0,1,0,1,0,1,0,1,0,0,1,1,1,1,1,1,0,0,1,1,0,0,0,1,1,0,1,0,1,1,1,1,0,0,1,1,0,1,0,1,1,0,1,0,0,1,1,0,0,0,1,0,0,1,0,1,1,1,0,0,0,0,1,0,1,1,1,1,0], dtype=np.uint8)
+pn_bits_S1 = sio.loadmat('waveform_STTD.mat')['bits_S1'].ravel().astype(np.uint8)[6:]
+pn_bits_S2 = sio.loadmat('waveform_STTD.mat')['bits_S2'].ravel().astype(np.uint8)[6:]
+
 
 
 def qpsk_modulate(bits, phase_offset=np.pi / 4):
@@ -45,7 +44,6 @@ def qpsk_modulate(bits, phase_offset=np.pi / 4):
     GRAY_MAP = {(0,0): 0, (0,1): 1, (1,1): 2, (1,0): 3}
     gray_idx = np.array([GRAY_MAP[tuple(bb)] for bb in b], dtype=int)
     return np.exp(1j * (phase_offset + np.pi / 2 * gray_idx))
-
 
 def qpsk_demodulate(syms, phase_offset=np.pi / 4):
     candidates = np.exp(1j * (phase_offset + np.pi / 2 * np.arange(4)))
@@ -176,6 +174,11 @@ def process_packets(valid_packets, rxBuffer, ref_syms, pn_bits):
         t_vec   = np.arange(len(pkt_ant1)) / Fs
         cfo_vec = np.exp(-1j * 2 * np.pi * est_cfo * t_vec)
 
+        # Print the normalized frequency offset
+        normalized_cfo = est_cfo / Fs
+        print(f"CFO: {est_cfo:.2f} Hz")
+        print(f"Phase rotation per symbol: {normalized_cfo * 360:.2f} degrees")
+
         clean_ant1 = pkt_ant1 * cfo_vec
         clean_ant2 = pkt_ant2 * cfo_vec
 
@@ -186,6 +189,11 @@ def process_packets(valid_packets, rxBuffer, ref_syms, pn_bits):
         fine_idx1              = int(np.argmax(np.abs(fine_corr1)))
         los_phase_ref         = np.angle(fine_corr1[fine_idx1])
         phase_anchor          = np.exp(-1j * los_phase_ref)
+
+        # In your packet detection block:
+        peak_val = np.max(np.abs(fine_corr1))
+        mean_val = np.mean(np.abs(fine_corr1))
+        print(f"Correlation Peak-to-Average Ratio: {peak_val / mean_val:.2f}")
 
         fine_corr2, fine_lags2 = xcorr(mf_ant2, ref_syms)
         fine_idx2              = int(np.argmax(np.abs(fine_corr2)))
@@ -224,17 +232,41 @@ def process_packets(valid_packets, rxBuffer, ref_syms, pn_bits):
 
         all_syms_ant1[:, p] = fit_to(syms_ant1, NUM_REF_SYMS)
         all_syms_ant2[:, p] = fit_to(syms_ant2, NUM_REF_SYMS)
+    
 
-        rx_bits1 = qpsk_demodulate(syms_ant1)
-        rx_bits2 = qpsk_demodulate(syms_ant2)
-        L = min(len(pn_bits), len(rx_bits1))
-        n_err1 = int(np.sum(pn_bits[2*symbol_indices_ant1[0]:2*symbol_indices_ant1[-1]] != rx_bits1))
-        n_err2 = int(np.sum(pn_bits[2*symbol_indices_ant2[0]:2*symbol_indices_ant2[-1]] != rx_bits2))
+        # 1. Extract the symbols
+        syms_to_demod1 = mf_ant1[start_idx1:end_idx1]
+        syms_to_demod2 = mf_ant2[start_idx2:end_idx2]
+
+        # Check for phase drift across the packet
+        first_sym_phase = np.angle(syms_to_demod1[0] * np.conj(ref_syms[0]))
+        last_sym_phase = np.angle(syms_to_demod1[-1] * np.conj(ref_syms[len(syms_to_demod1)-1]))
+        print(f"Phase Drift across preamble: {np.degrees(last_sym_phase - first_sym_phase):.2f} degrees")
+        p_signal = np.mean(np.abs(syms_to_demod1)**2)
+        p_noise = np.abs(syms_to_demod1[0])**2 # First sample might be noise
+        print(f"Estimated SNR (rough): {10 * np.log10(p_signal / p_noise):.2f} dB")
+
+        # We compare the first N symbols of our extracted window to the known reference symbols
+        num_ref = min(len(syms_to_demod1), len(ref_syms))
+        phase_corr1 = np.angle(np.sum(syms_to_demod1[:num_ref] * np.conj(ref_syms[:num_ref])))
+        phase_corr2 = np.angle(np.sum(syms_to_demod2[:num_ref] * np.conj(ref_syms[:num_ref])))
+
+        # 3. Demodulate
+        bits_out1 = qpsk_demodulate(syms_to_demod1 * np.exp(-1j * phase_corr1))
+        bits_out2 = qpsk_demodulate(syms_to_demod2 * np.exp(-1j * phase_corr2))
+
+        print(f"Truth Bits: {pn_bits[:20]}")
+        print(f"RX Bits:    {bits_out1[:20]}")
+
+        # 4. The BER calculation
+        L = min(len(pn_bits), len(bits_out1))
+      
+        n_err1 = int(np.sum(pn_bits[:L] != bits_out1[:L]))
+        n_err2 = int(np.sum(pn_bits[:L] != bits_out2[:L]))
 
         ber1 = n_err1 / L
         ber2 = n_err2 / L
 
-        
         csi1 = np.mean(syms_ant1 / ref_syms[symbol_indices_ant1])
         csi2 = np.mean(syms_ant2 / ref_syms[symbol_indices_ant2])
         if p == 0:
@@ -324,8 +356,12 @@ NUM_REF_SYMS = len(ref_syms_S1)
 
 ref_sig_S1 = sio.loadmat('waveform_STTD.mat')['waveform_S1'].ravel()
 ref_sig_S2 = sio.loadmat('waveform_STTD.mat')['waveform_S2'].ravel()
-# ref_sig_S1 = sio.loadmat("reference_sig.mat")["reference_sig"].ravel()
-# ref_sig_S2 = sio.loadmat('reference_sig_mimo.mat')['waveform_S2'].ravel()
+
+# And verify what qpsk_modulate produces matches ref_syms
+ref_syms_check = qpsk_modulate(pn_bits_S1)
+print("ref_syms_S1[:5]:", ref_syms_S1[:5])
+print("modulated check[:5]:", ref_syms_check[:5])
+print("match:", np.allclose(ref_syms_S1, ref_syms_check))
 
 GROUP_DELAY = (SPAN * SPS) // 2
 ref_sig_S1  = ref_sig_S1[GROUP_DELAY:]
@@ -435,6 +471,28 @@ print_summary('S2', results_S2)
 # ==============================================================================
 # 10.  SAVE RESULTS
 # ==============================================================================
+BER_THRESHOLD = 0.001
+
+def filter_by_ber(results, syms_ant1, syms_ant2, threshold=BER_THRESHOLD):
+    """Return results and symbol arrays keeping only packets with BER1 <= threshold."""
+    keep = [i for i, r in enumerate(results) if r['ber1'] <= threshold]
+    n_orig = len(results)
+    print(f"  BER filter: keeping {len(keep)}/{n_orig} packets (BER1 ≤ {threshold})")
+    filtered_results = [results[i] for i in keep]
+    filtered_ant1    = syms_ant1[:, keep] if keep else np.zeros((syms_ant1.shape[0], 0), dtype=complex)
+    filtered_ant2    = syms_ant2[:, keep] if keep else np.zeros((syms_ant2.shape[0], 0), dtype=complex)
+    return filtered_results, filtered_ant1, filtered_ant2
+
+print("\nApplying BER filter before saving...")
+results_S1_f, all_syms_ant1_S1_f, all_syms_ant2_S1_f = filter_by_ber(
+    results_S1, all_syms_ant1_S1, all_syms_ant2_S1)
+results_S2_f, all_syms_ant1_S2_f, all_syms_ant2_S2_f = filter_by_ber(
+    results_S2, all_syms_ant1_S2, all_syms_ant2_S2)
+
+# Re-cluster on the filtered symbol sets
+cluster_means_ant1_S1_f, cluster_means_ant2_S1_f = cluster_packets(all_syms_ant1_S1_f, all_syms_ant2_S1_f)
+cluster_means_ant1_S2_f, cluster_means_ant2_S2_f = cluster_packets(all_syms_ant1_S2_f, all_syms_ant2_S2_f)
+
 def make_results_struct(results):
     return {
         'ber1':     np.array([r['ber1']     for r in results]).reshape(1, -1),
@@ -444,18 +502,18 @@ def make_results_struct(results):
     }
 
 final_data = {
-    'results_S1':             np.array([make_results_struct(results_S1)]),
-    'results_S2':             np.array([make_results_struct(results_S2)]),
-    'num_packets_S1':         np.array([[len(valid_packets_S1)]], dtype=float),
-    'num_packets_S2':         np.array([[len(valid_packets_S2)]], dtype=float),
-    'all_syms_ant1_S1':       all_syms_ant1_S1,
-    'all_syms_ant2_S1':       all_syms_ant2_S1,
-    'all_syms_ant1_S2':       all_syms_ant1_S2,
-    'all_syms_ant2_S2':       all_syms_ant2_S2,
-    'cluster_means_ant1_S1':  cluster_means_ant1_S1,
-    'cluster_means_ant2_S1':  cluster_means_ant2_S1,
-    'cluster_means_ant1_S2':  cluster_means_ant1_S2,
-    'cluster_means_ant2_S2':  cluster_means_ant2_S2,
+    'results_S1':             np.array([make_results_struct(results_S1_f)]),
+    'results_S2':             np.array([make_results_struct(results_S2_f)]),
+    'num_packets_S1':         np.array([[len(results_S1_f)]], dtype=float),
+    'num_packets_S2':         np.array([[len(results_S2_f)]], dtype=float),
+    'all_syms_ant1_S1':       all_syms_ant1_S1_f,
+    'all_syms_ant2_S1':       all_syms_ant2_S1_f,
+    'all_syms_ant1_S2':       all_syms_ant1_S2_f,
+    'all_syms_ant2_S2':       all_syms_ant2_S2_f,
+    'cluster_means_ant1_S1':  cluster_means_ant1_S1_f,
+    'cluster_means_ant2_S1':  cluster_means_ant2_S1_f,
+    'cluster_means_ant1_S2':  cluster_means_ant1_S2_f,
+    'cluster_means_ant2_S2':  cluster_means_ant2_S2_f,
     'rx_pos':                 rx_pos.reshape(1, -1),
     'tx_pos':                 tx_pos.reshape(1, -1),
     'freq':                   np.array([[915e6]]),
