@@ -193,8 +193,8 @@ def save_cnn_dataset(X, y):
     N = X.shape[0] # (N, 3, 4, 2, 8)
     X = X.transpose(0, 1, 3, 2, 4)
 
-    N = X.shape[0] # (N, 3, 4, 2, 8)
-    print(f"X shape : {X.shape}") 
+    N = X.shape[0] # (N, 3, 2, 4, 8)
+    print(f"New X shape : {X.shape}") 
     
     # reshape for CNN
     X = X.reshape(N, 3*2, 4*8)        # (N,6,32)
