@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from scipy.cluster.vq import kmeans2
 
 parser = argparse.ArgumentParser(description='NeRF2 offline receiver')
-parser.add_argument('--input',  default='mimo_tx3_10_9_90.mat', help='Input .mat file')
+parser.add_argument('--input',  default='mimo_tx1_1.5_3.5_0.mat', help='Input .mat file')
 parser.add_argument('--output', default='processed.mat',        help='Output .mat file')
 args = parser.parse_args()
 
@@ -30,8 +30,8 @@ SPS     = 5
 ROLLOFF = 0.25
 SPAN    = 6
 
-NUM_PACKETS    = 10
-MIN_PEAK_DIST  = 25000
+NUM_PACKETS    = 120
+MIN_PEAK_DIST  = 7000
 MIN_PROM_FRAC  = 0.0
 pn_bits_S1 = sio.loadmat('waveform_STTD.mat')['bits_S1'].ravel().astype(np.uint8)[6:]
 pn_bits_S2 = sio.loadmat('waveform_STTD.mat')['bits_S2'].ravel().astype(np.uint8)[6:]
@@ -141,6 +141,7 @@ def detect_packets(rx, ref_sig):
     sort_idx    = np.argsort(pks_vals)[::-1]
     pks_vals    = pks_vals[sort_idx]
     pks_locs    = pks_locs[sort_idx]
+    print(f"corrVals {corrVals[:10]}")
     return corrVals, corrMag, lags, pks_locs, pks_vals
 
 
@@ -165,13 +166,14 @@ def process_packets(valid_packets, rxBuffer, ref_syms, pn_bits):
     results = []
 
     for p, pkt in enumerate(valid_packets):
-        s = pkt['startIdx']
-        extraction_limit = min(s + N_PKT - (SPAN // 2 * SPS), rxBuffer.shape[0])
-        pkt_ant1 = rxBuffer[s:extraction_limit, 0]
-        pkt_ant2 = rxBuffer[s:extraction_limit, 1]
+        s = pkt['startIdx'] - 1000#- 10000
+        extraction_len = N_PKT - (SPAN // 2 * SPS) + 2000#+ 20000
+
+        pkt_ant1 = rxBuffer[s:s+extraction_len, 0]
+        pkt_ant2 = rxBuffer[s:s+extraction_len, 1]
 
         est_cfo = coarse_cfo_estimate(pkt_ant1, Fs)
-        t_vec   = np.arange(len(pkt_ant1)) / Fs
+        t_vec   = np.arange(len(pkt_ant2)) / Fs
         cfo_vec = np.exp(-1j * 2 * np.pi * est_cfo * t_vec)
 
         # Print the normalized frequency offset
@@ -182,105 +184,108 @@ def process_packets(valid_packets, rxBuffer, ref_syms, pn_bits):
         clean_ant1 = pkt_ant1 * cfo_vec
         clean_ant2 = pkt_ant2 * cfo_vec
 
-        mf_ant1 = rrc_rx_filter(clean_ant1, H_rrc, SPS, ref_syms=ref_syms)
-        mf_ant2 = rrc_rx_filter(clean_ant2, H_rrc, SPS, ref_syms=ref_syms)
+        if (len(pkt_ant1) == extraction_len and len(pkt_ant2) == extraction_len):
+            
+        
+            mf_ant1 = rrc_rx_filter(clean_ant1, H_rrc, SPS, ref_syms=ref_syms)
+            mf_ant2 = rrc_rx_filter(clean_ant2, H_rrc, SPS, ref_syms=ref_syms)
 
-        fine_corr1, fine_lags1 = xcorr(mf_ant1, ref_syms)
-        fine_idx1              = int(np.argmax(np.abs(fine_corr1)))
-        los_phase_ref         = np.angle(fine_corr1[fine_idx1])
-        phase_anchor          = np.exp(-1j * los_phase_ref)
+            fine_corr1, fine_lags1 = xcorr(mf_ant1, ref_syms)
+            fine_idx1              = int(np.argmax(np.abs(fine_corr1)))
+            los_phase_ref         = np.angle(fine_corr1[fine_idx1])
+            phase_anchor          = np.exp(-1j * los_phase_ref)
 
-        # In your packet detection block:
-        peak_val = np.max(np.abs(fine_corr1))
-        mean_val = np.mean(np.abs(fine_corr1))
-        print(f"Correlation Peak-to-Average Ratio: {peak_val / mean_val:.2f}")
+            # In your packet detection block:
+            peak_val = np.max(np.abs(fine_corr1))
+            mean_val = np.mean(np.abs(fine_corr1))
+            print(f"Correlation Peak-to-Average Ratio: {peak_val / mean_val:.2f}")
 
-        fine_corr2, fine_lags2 = xcorr(mf_ant2, ref_syms)
-        fine_idx2              = int(np.argmax(np.abs(fine_corr2)))
+            fine_corr2, fine_lags2 = xcorr(mf_ant2, ref_syms)
+            fine_idx2              = int(np.argmax(np.abs(fine_corr2)))
 
-        mf_ant1_anchored = mf_ant1 * phase_anchor
-        mf_ant2_anchored = mf_ant2 * phase_anchor
+            mf_ant1_anchored = mf_ant1 * phase_anchor
+            mf_ant2_anchored = mf_ant2 * phase_anchor
 
-        fine_timing_offset1 = int(fine_lags1[fine_idx1])
-        start_idx1 = max(0, min(fine_timing_offset1, len(mf_ant1) - NUM_REF_SYMS))
-        end_idx1   = start_idx1 + NUM_REF_SYMS
-        fine_timing_offset2 = int(fine_lags2[fine_idx2])
-        start_idx2 = max(0, min(fine_timing_offset2, len(mf_ant2) - NUM_REF_SYMS))
-        end_idx2   = start_idx2 + NUM_REF_SYMS
+            fine_timing_offset1 = int(fine_lags1[fine_idx1])
+            start_idx1 = max(0, min(fine_timing_offset1, len(mf_ant1) - NUM_REF_SYMS))
+            end_idx1   = start_idx1 + NUM_REF_SYMS
+            fine_timing_offset2 = int(fine_lags2[fine_idx2])
+            start_idx2 = max(0, min(fine_timing_offset2, len(mf_ant2) - NUM_REF_SYMS))
+            end_idx2   = start_idx2 + NUM_REF_SYMS
 
-        syms_ant1 = mf_ant1_anchored[start_idx1:end_idx1]
-        syms_ant2 = mf_ant2_anchored[start_idx2:end_idx2]
+            syms_ant1 = mf_ant1_anchored[start_idx1:end_idx1]
+            syms_ant2 = mf_ant2_anchored[start_idx2:end_idx2]
 
-        symbol_indices_ant1 = range(len(syms_ant1))#np.where(np.abs(syms_ant1) > 0.5 * np.mean(np.abs(syms_ant1)))[0]
-        symbol_indices_ant2 = range(len(syms_ant2))#np.where(np.abs(syms_ant2) > 0.5 * np.mean(np.abs(syms_ant2)))[0]
+            symbol_indices_ant1 = range(len(syms_ant1))#np.where(np.abs(syms_ant1) > 0.5 * np.mean(np.abs(syms_ant1)))[0]
+            symbol_indices_ant2 = range(len(syms_ant2))#np.where(np.abs(syms_ant2) > 0.5 * np.mean(np.abs(syms_ant2)))[0]
 
-        syms_ant1 = syms_ant1[symbol_indices_ant1]
-        syms_ant2 = syms_ant2[symbol_indices_ant2]
+            syms_ant1 = syms_ant1[symbol_indices_ant1]
+            syms_ant2 = syms_ant2[symbol_indices_ant2]
 
-        # if p < 5:  # First 5 packets
-        #     # Plot symbol magnitudes vs symbol index
-        #     plt.figure(figsize=(10, 4))
-        #     plt.plot(np.arange(len(syms_ant1)), np.abs(syms_ant1), marker='o', linestyle='-', label='Antenna 1')
-        #     plt.plot(np.arange(len(syms_ant2)), np.abs(syms_ant2), marker='x', linestyle='-', label='Antenna 2')
-        #     plt.xlabel('Symbol Index within Packet')
-        #     plt.ylabel('Magnitude')
-        #     plt.title(f'Packet {p} Symbol Magnitudes')
-        #     plt.grid(True)
-        #     plt.legend()
-        #     plt.tight_layout()
-        #     plt.show()
+            # if p < 5:  # First 5 packets
+            #     # Plot symbol magnitudes vs symbol index
+            #     plt.figure(figsize=(10, 4))
+            #     plt.plot(np.arange(len(syms_ant1)), np.abs(syms_ant1), marker='o', linestyle='-', label='Antenna 1')
+            #     plt.plot(np.arange(len(syms_ant2)), np.abs(syms_ant2), marker='x', linestyle='-', label='Antenna 2')
+            #     plt.xlabel('Symbol Index within Packet')
+            #     plt.ylabel('Magnitude')
+            #     plt.title(f'Packet {p} Symbol Magnitudes')
+            #     plt.grid(True)
+            #     plt.legend()
+            #     plt.tight_layout()
+            #     plt.show()
 
-        all_syms_ant1[:, p] = fit_to(syms_ant1, NUM_REF_SYMS)
-        all_syms_ant2[:, p] = fit_to(syms_ant2, NUM_REF_SYMS)
-    
+            all_syms_ant1[:, p] = fit_to(syms_ant1, NUM_REF_SYMS)
+            all_syms_ant2[:, p] = fit_to(syms_ant2, NUM_REF_SYMS)
+        
 
-        # 1. Extract the symbols
-        syms_to_demod1 = mf_ant1[start_idx1:end_idx1]
-        syms_to_demod2 = mf_ant2[start_idx2:end_idx2]
+            # 1. Extract the symbols
+            syms_to_demod1 = mf_ant1[start_idx1:end_idx1]
+            syms_to_demod2 = mf_ant2[start_idx2:end_idx2]
 
-        # Check for phase drift across the packet
-        first_sym_phase = np.angle(syms_to_demod1[0] * np.conj(ref_syms[0]))
-        last_sym_phase = np.angle(syms_to_demod1[-1] * np.conj(ref_syms[len(syms_to_demod1)-1]))
-        print(f"Phase Drift across preamble: {np.degrees(last_sym_phase - first_sym_phase):.2f} degrees")
-        p_signal = np.mean(np.abs(syms_to_demod1)**2)
-        p_noise = np.abs(syms_to_demod1[0])**2 # First sample might be noise
-        print(f"Estimated SNR (rough): {10 * np.log10(p_signal / p_noise):.2f} dB")
+            # Check for phase drift across the packet
+            first_sym_phase = np.angle(syms_to_demod1[0] * np.conj(ref_syms[0]))
+            last_sym_phase = np.angle(syms_to_demod1[-1] * np.conj(ref_syms[len(syms_to_demod1)-1]))
+            print(f"Phase Drift across preamble: {np.degrees(last_sym_phase - first_sym_phase):.2f} degrees")
+            p_signal = np.mean(np.abs(syms_to_demod1)**2)
+            p_noise = np.abs(syms_to_demod1[0])**2 # First sample might be noise
+            print(f"Estimated SNR (rough): {10 * np.log10(p_signal / p_noise):.2f} dB")
 
-        # We compare the first N symbols of our extracted window to the known reference symbols
-        num_ref = min(len(syms_to_demod1), len(ref_syms))
-        phase_corr1 = np.angle(np.sum(syms_to_demod1[:num_ref] * np.conj(ref_syms[:num_ref])))
-        phase_corr2 = np.angle(np.sum(syms_to_demod2[:num_ref] * np.conj(ref_syms[:num_ref])))
+            # We compare the first N symbols of our extracted window to the known reference symbols
+            num_ref = min(len(syms_to_demod1), len(ref_syms))
+            phase_corr1 = np.angle(np.sum(syms_to_demod1[:num_ref] * np.conj(ref_syms[:num_ref])))
+            phase_corr2 = np.angle(np.sum(syms_to_demod2[:num_ref] * np.conj(ref_syms[:num_ref])))
 
-        # 3. Demodulate
-        bits_out1 = qpsk_demodulate(syms_to_demod1 * np.exp(-1j * phase_corr1))
-        bits_out2 = qpsk_demodulate(syms_to_demod2 * np.exp(-1j * phase_corr2))
+            # 3. Demodulate
+            bits_out1 = qpsk_demodulate(syms_to_demod1 * np.exp(-1j * phase_corr1))
+            bits_out2 = qpsk_demodulate(syms_to_demod2 * np.exp(-1j * phase_corr2))
 
-        print(f"Truth Bits: {pn_bits[:20]}")
-        print(f"RX Bits:    {bits_out1[:20]}")
+            print(f"Truth Bits: {pn_bits[:20]}")
+            print(f"RX Bits:    {bits_out1[:20]}")
 
-        # 4. The BER calculation
-        L = min(len(pn_bits), len(bits_out1))
-      
-        n_err1 = int(np.sum(pn_bits[:L] != bits_out1[:L]))
-        n_err2 = int(np.sum(pn_bits[:L] != bits_out2[:L]))
+            # 4. The BER calculation
+            L = min(len(pn_bits), len(bits_out1))
+        
+            n_err1 = int(np.sum(pn_bits[:L] != bits_out1[:L]))
+            n_err2 = int(np.sum(pn_bits[:L] != bits_out2[:L]))
 
-        ber1 = n_err1 / L
-        ber2 = n_err2 / L
+            ber1 = n_err1 / L
+            ber2 = n_err2 / L
 
-        csi1 = np.mean(syms_ant1 / ref_syms[symbol_indices_ant1])
-        csi2 = np.mean(syms_ant2 / ref_syms[symbol_indices_ant2])
-        if p == 0:
-            print(f"CSI1 {csi1}  CSI2 {csi2}")
-        results.append({
-            'ber1':      ber1,
-            'ber2':      ber2,
-            'cfo':       est_cfo,
-            'csi1':      csi1,
-            'csi2':      csi2,
-            'rel_phase': np.angle(csi2),
-            'peakVal':   pkt['peakVal'],
-            'peakTime':  pkt['peakTime'],
-        })
+            csi1 = np.mean(syms_ant1 / ref_syms[symbol_indices_ant1])
+            csi2 = np.mean(syms_ant2 / ref_syms[symbol_indices_ant2])
+            if p == 0:
+                print(f"CSI1 {csi1}  CSI2 {csi2}")
+            results.append({
+                'ber1':      ber1,
+                'ber2':      ber2,
+                'cfo':       est_cfo,
+                'csi1':      csi1,
+                'csi2':      csi2,
+                'rel_phase': np.angle(csi2),
+                'peakVal':   pkt['peakVal'],
+                'peakTime':  pkt['peakTime'],
+            })
 
     return all_syms_ant1, all_syms_ant2, results
 
@@ -302,7 +307,7 @@ def cluster_packets(all_syms_ant1, all_syms_ant2):
 
 
 def plot_constellations(all_syms_ant1, all_syms_ant2, valid_packets, label):
-    sample_idxs = range(len(valid_packets))
+    sample_idxs = range(min(len(valid_packets), 10))
     n_cols = max(len(sample_idxs), 2)
     fig, axes = plt.subplots(2, n_cols, figsize=(4 * n_cols, 8))
     if n_cols == 1:
@@ -328,14 +333,15 @@ def plot_constellations(all_syms_ant1, all_syms_ant2, valid_packets, label):
 
 def print_summary(label, results):
     ber1_arr = np.array([r['ber1'] for r in results])
+    ber2_arr = np.array([r['ber2'] for r in results])
     cfo_arr  = np.array([r['cfo']  for r in results])
     print(f"\n================ {label} SUMMARY ================")
     print(f"Total packets processed: {len(results)}")
     print(f"\nAntenna 1:")
-    print(f"  Mean BER:    {np.mean(ber1_arr):.6f}")
-    print(f"  Median BER:  {np.median(ber1_arr):.6f}")
-    print(f"  Min BER:     {np.min(ber1_arr):.6f}")
-    print(f"  Max BER:     {np.max(ber1_arr):.6f}")
+    print(f"  Mean BER:    {np.mean(ber2_arr):.6f}")
+    print(f"  Median BER:  {np.median(ber2_arr):.6f}")
+    print(f"  Min BER:     {np.min(ber2_arr):.6f}")
+    print(f"  Max BER:     {np.max(ber2_arr):.6f}")
     print(f"\nCFO Statistics:")
     print(f"  Mean CFO:    {np.mean(cfo_arr):.1f} Hz")
     print(f"  Std CFO:     {np.std(cfo_arr):.1f} Hz")
@@ -395,7 +401,7 @@ print("Cross-correlation for packet detection...")
 rx1 = rxBuffer[:, 0]
 rx2 = rxBuffer[:, 1]
 
-corrVals_S1, corrMag_S1, lags_S1, pks_locs_S1, pks_vals_S1 = detect_packets(rx1, ref_sig_S1)
+corrVals_S1, corrMag_S1, lags_S1, pks_locs_S1, pks_vals_S1 = detect_packets(rx2, ref_sig_S1)
 corrVals_S2, corrMag_S2, lags_S2, pks_locs_S2, pks_vals_S2 = detect_packets(rx2, ref_sig_S2)
 
 valid_packets_S1 = collect_valid_packets(lags_S1, pks_locs_S1, pks_vals_S1, N_PKT, rxBuffer.shape[0])
@@ -459,8 +465,8 @@ cluster_means_ant1_S2, cluster_means_ant2_S2 = cluster_packets(all_syms_ant1_S2,
 # ==============================================================================
 # 8.  CONSTELLATION PLOTS
 # ==============================================================================
-plot_constellations(all_syms_ant1_S1, all_syms_ant2_S1, valid_packets_S1, 'S1')
-plot_constellations(all_syms_ant1_S2, all_syms_ant2_S2, valid_packets_S2, 'S2')
+# plot_constellations(all_syms_ant1_S1, all_syms_ant2_S1, valid_packets_S1, 'S1')
+# plot_constellations(all_syms_ant1_S2, all_syms_ant2_S2, valid_packets_S2, 'S2')
 
 # ==============================================================================
 # 9.  SUMMARY STATISTICS
@@ -479,15 +485,18 @@ def filter_by_ber(results, syms_ant1, syms_ant2, threshold=BER_THRESHOLD):
     n_orig = len(results)
     print(f"  BER filter: keeping {len(keep)}/{n_orig} packets (BER1 ≤ {threshold})")
     filtered_results = [results[i] for i in keep]
-    filtered_ant1    = syms_ant1[:, keep] if keep else np.zeros((syms_ant1.shape[0], 0), dtype=complex)
-    filtered_ant2    = syms_ant2[:, keep] if keep else np.zeros((syms_ant2.shape[0], 0), dtype=complex)
-    return filtered_results, filtered_ant1, filtered_ant2
+    filtered_ant1    = syms_ant1[:, keep] #if keep else np.zeros((syms_ant1.shape[0], 0), dtype=complex)
+    filtered_ant2    = syms_ant2[:, keep] #if keep else np.zeros((syms_ant2.shape[0], 0), dtype=complex)
+    return filtered_results, filtered_ant1, filtered_ant2, len(keep)
 
 print("\nApplying BER filter before saving...")
-results_S1_f, all_syms_ant1_S1_f, all_syms_ant2_S1_f = filter_by_ber(
+results_S1_f, all_syms_ant1_S1_f, all_syms_ant2_S1_f, num_pkts = filter_by_ber(
     results_S1, all_syms_ant1_S1, all_syms_ant2_S1)
-results_S2_f, all_syms_ant1_S2_f, all_syms_ant2_S2_f = filter_by_ber(
+results_S2_f, all_syms_ant1_S2_f, all_syms_ant2_S2_f, num_pkts = filter_by_ber(
     results_S2, all_syms_ant1_S2, all_syms_ant2_S2)
+
+plot_constellations(all_syms_ant1_S1, all_syms_ant2_S1, range(num_pkts), 'S1')
+plot_constellations(all_syms_ant1_S2, all_syms_ant2_S2, range(num_pkts), 'S2')
 
 # Re-cluster on the filtered symbol sets
 cluster_means_ant1_S1_f, cluster_means_ant2_S1_f = cluster_packets(all_syms_ant1_S1_f, all_syms_ant2_S1_f)
