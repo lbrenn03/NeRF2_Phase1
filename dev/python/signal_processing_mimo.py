@@ -31,7 +31,7 @@ ROLLOFF = 0.25
 SPAN    = 6
 
 NUM_PACKETS    = 120
-MIN_PEAK_DIST  = 7000
+MIN_PEAK_DIST  = 5000
 MIN_PROM_FRAC  = 0.0
 pn_bits_S1 = sio.loadmat('waveform_STTD.mat')['bits_S1'].ravel().astype(np.uint8)[6:]
 pn_bits_S2 = sio.loadmat('waveform_STTD.mat')['bits_S2'].ravel().astype(np.uint8)[6:]
