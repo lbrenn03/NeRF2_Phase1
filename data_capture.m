@@ -1,17 +1,28 @@
 clear;
 
 % Adjust to match RX position
-x_lab = 4;
-y_lab = 2;
+x_lab = 11.5;
+y_lab = 9.5;
 orientation = 135;
 
 % Adjust to match TX position, ALSO UPDATE THE FILENAME TO TX#
+
+tx_num = 1;
+tx_pos = [-1, 10, 0.875];
+
+%tx_num = 2;
+%tx_pos = [13, 8, 0.875];
+
+%tx_num = 3;
 %tx_pos = [6, 5, 1.021];
-tx_pos = [13, 8, 0.875];
-%tx_pos = [-1, 10, 0.875];
-tx_num = 2;
-%data_folder = "mimo_data/";
-data_folder = "mimo_data/";
+
+if x_lab == round(x_lab) && y_lab == round(y_lab)
+    data_folder = "mimo_data_f2/";
+elseif x_lab == round(x_lab) || y_lab == round(y_lab)
+    disp("Something is mismatched check x y")
+else
+    data_folder = "mimo_test_data_f2/";
+end
 
 
 %% -------------------------------------------------------------------------
@@ -71,8 +82,8 @@ end
 
 % if you f-up a file then just uncomment this and ignore the error
 % generated
-save(filename, 'raw_data');
-disp('File saved!');
+%save(filename, 'raw_data');
+%disp('Fixer File saved!');
 
 if not(isfile(filename))
     save(filename, 'raw_data'); % dev filename

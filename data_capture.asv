@@ -1,15 +1,28 @@
 clear;
 
 % Adjust to match RX position
-x_lab = 2.5;
-y_lab = 6.5;
-orientation = 135;
+x_lab = 6;
+y_lab = 8;
+orientation = 0;
 
 % Adjust to match TX position, ALSO UPDATE THE FILENAME TO TX#
-tx_pos = [6, 5, 1.021];
-tx_num = 3;
-%data_folder = "mimo_data/";
-data_folder = "mimo_test_data/";
+
+tx_num = 1;
+tx_pos = [-1, 10, 0.875];
+
+%tx_num = 2;
+%tx_pos = [13, 8, 0.875];
+
+%tx_num = 3;
+%tx_pos = [6, 5, 1.021];
+
+if x_lab == round(x_lab) && y_lab == round(y_lab)
+    data_folder = "mimo_data_f2/";
+% elseif x_lab == round(x_lab) && y_lab == round(y_lab)
+    disp("SOmething is mism")
+else
+    data_folder = "mimo_test_data_f2/";
+end
 
 
 %% -------------------------------------------------------------------------
@@ -28,9 +41,9 @@ rxObj = comm.SDRuReceiver( ...
     'MasterClockRate',   30e6, ...
     'DecimationFactor',  60, ...
     'SamplesPerFrame',   TotalSamples, ...
-    'CenterFrequency',   915e6, ...
+    'CenterFrequency',   5.4e9, ...
     'ChannelMapping',    [1 2], ...    
-    'Gain',              [40 40], ...
+    'Gain',              [70 70], ...
     'OutputDataType',    'double');
 
 %% -------------------------------------------------------------------------
@@ -55,7 +68,7 @@ disp('Capture complete. Saving raw IQ buffer...');
 raw_data.iq          = rxBuffer;        % [TotalSamples x 2] complex double
 raw_data.Fs          = Fs;
 raw_data.CaptureTime = CaptureTime;
-raw_data.freq        = 915e6;
+raw_data.freq        = 5.4e9;
 raw_data.rx_pos      = [x_lab, y_lab, 0.571];
 raw_data.tx_pos      = tx_pos;
 raw_data.mimo        = false;
@@ -70,12 +83,13 @@ end
 % if you f-up a file then just uncomment this and ignore the error
 % generated
 %save(filename, 'raw_data');
-%disp('File saved!');
+%disp('Fixer File saved!');
 
 if not(isfile(filename))
     save(filename, 'raw_data'); % dev filename
     disp('File saved!');
 else
+
     error("duplicate file name")
 end
 
