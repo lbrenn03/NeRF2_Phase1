@@ -1,9 +1,9 @@
 clear;
 
 % Adjust to match RX position
-x_lab = 11.5;
-y_lab = 9.5;
-orientation = 135;
+x_lab = -1;
+y_lab = 6;
+orientation = 0;
 
 % Adjust to match TX position, ALSO UPDATE THE FILENAME TO TX#
 
