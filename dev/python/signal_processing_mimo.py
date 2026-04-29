@@ -1,6 +1,5 @@
 """
-F2 Receiver — Offline Processing
-Loads a pre-captured .mat file and outputs nerf_<tag>.mat matching the MATLAB final_data struct layout.
+MIMO Receiver — Offline Processing
 
 Usage:
     python mimo_proc.py --input raw_capture.mat --output processed.mat
@@ -11,11 +10,10 @@ import sys
 import numpy as np
 import scipy.io as sio
 import scipy.signal as sps_sig
-from scipy.cluster.vq import kmeans2
 
 parser = argparse.ArgumentParser(description='NeRF2 offline receiver')
-parser.add_argument('--input',  default='mimo_tx3_11.5_9.5_45.mat', help='Input .mat file')
-parser.add_argument('--output', default='processed.mat',             help='Output .mat file')
+parser.add_argument('--input',  default='example.mat', help='Input .mat file')
+parser.add_argument('--output', default='processed_example.mat',             help='Output .mat file')
 args = parser.parse_args()
 
 # ==============================================================================
@@ -97,12 +95,6 @@ def fit_to(arr, n):
     return np.pad(arr, (0, n - len(arr)))
 
 
-def kmeans_cluster_means(syms):
-    pts = np.column_stack([syms.real, syms.imag])
-    centroids, _ = kmeans2(pts, 4, iter=20, minit='points', missing='warn')
-    return centroids[:, 0] + 1j * centroids[:, 1]
-
-
 def detect_packets(rx, ref_sig):
     corrVals = sps_sig.correlate(rx, ref_sig, mode='full', method='auto')
     lags = sps_sig.correlation_lags(len(rx), len(ref_sig), mode='full')
@@ -129,25 +121,25 @@ def collect_valid_packets(lags, pks_locs, pks_vals, n_pkt, buf_len):
 
 def process_packets(valid_packets, rxBuffer, ref_syms, pn_bits):
     NUM_REF_SYMS = len(ref_syms)
-    num_p = len(valid_packets)
-    all_syms_ant1 = np.zeros((NUM_REF_SYMS, num_p), dtype=complex)
-    all_syms_ant2 = np.zeros((NUM_REF_SYMS, num_p), dtype=complex)
     results = []
+    collected_syms_ant1 = []
+    collected_syms_ant2 = []
 
-    for p, pkt in enumerate(valid_packets):
+    for pkt in valid_packets:
+        # 1. BRAKE CHECK: Explicit Bounds Handling (Fixes Bug 5)
         s = pkt['startIdx'] - 1000
         extraction_len = N_PKT - (SPAN // 2 * SPS) + 2000
+        
+        if s < 0 or (s + extraction_len) > rxBuffer.shape[0]:
+            continue
 
         pkt_ant1 = rxBuffer[s:s + extraction_len, 0]
         pkt_ant2 = rxBuffer[s:s + extraction_len, 1]
 
-        if len(pkt_ant1) != extraction_len or len(pkt_ant2) != extraction_len:
-            continue
-
+        # 2. CFO Correction
         est_cfo = coarse_cfo_estimate(pkt_ant1, Fs)
         t_vec = np.arange(extraction_len) / Fs
         cfo_vec = np.exp(-1j * 2 * np.pi * est_cfo * t_vec)
-
         clean_ant1 = pkt_ant1 * cfo_vec
         clean_ant2 = pkt_ant2 * cfo_vec
 
@@ -156,45 +148,39 @@ def process_packets(valid_packets, rxBuffer, ref_syms, pn_bits):
 
         fine_corr1, fine_lags1 = xcorr(mf_ant1, ref_syms)
         fine_idx1 = int(np.argmax(np.abs(fine_corr1)))
-        los_phase_ref = np.angle(fine_corr1[fine_idx1])
-        phase_anchor = np.exp(-1j * los_phase_ref)
+        start_idx = int(fine_lags1[fine_idx1])
+        
+        if start_idx < 0 or (start_idx + NUM_REF_SYMS) > len(mf_ant1):
+            continue
 
-        fine_corr2, fine_lags2 = xcorr(mf_ant2, ref_syms)
-        fine_idx2 = int(np.argmax(np.abs(fine_corr2)))
+        # Extract both antennas using the SAME temporal start point
+        syms_ant1 = mf_ant1[start_idx : start_idx + NUM_REF_SYMS]
+        syms_ant2 = mf_ant2[start_idx : start_idx + NUM_REF_SYMS]
 
-        mf_ant1_anchored = mf_ant1 * phase_anchor
-        mf_ant2_anchored = mf_ant2 * phase_anchor
+        # 4. ROBUST PHASE ANCHOR: Bulk average instead of single tap
+        # We calculate phase error of Ant1 and apply that rotation to BOTH
+        phase_anchor_val = np.sum(syms_ant1 * np.conj(ref_syms))
+        phase_corr1 = np.angle(phase_anchor_val)
+        
+        # Rotate both to maintain relative phase difference
+        syms_ant1_rotated = syms_ant1 * np.exp(-1j * phase_corr1)
+        syms_ant2_rotated = syms_ant2 * np.exp(-1j * phase_corr1)
 
-        fine_timing_offset1 = int(fine_lags1[fine_idx1])
-        start_idx1 = max(0, min(fine_timing_offset1, len(mf_ant1) - NUM_REF_SYMS))
-        end_idx1 = start_idx1 + NUM_REF_SYMS
+        # 5. STRICT BER: No truncation allowed (Fixes Bug 4)
+        bits_out1 = qpsk_demodulate(syms_ant1_rotated)
+        # For BER 2, we must re-phase Ant2 to its own peak to check its data integrity
+        phase_corr2 = np.angle(np.sum(syms_ant2 * np.conj(ref_syms)))
+        bits_out2 = qpsk_demodulate(syms_ant2 * np.exp(-1j * phase_corr2))
 
-        fine_timing_offset2 = int(fine_lags2[fine_idx2])
-        start_idx2 = max(0, min(fine_timing_offset2, len(mf_ant2) - NUM_REF_SYMS))
-        end_idx2 = start_idx2 + NUM_REF_SYMS
+        if len(bits_out1) != len(pn_bits) or len(bits_out2) != len(pn_bits):
+            continue
 
-        syms_ant1 = mf_ant1_anchored[start_idx1:end_idx1]
-        syms_ant2 = mf_ant2_anchored[start_idx2:end_idx2]
+        ber1 = np.mean(pn_bits != bits_out1)
+        ber2 = np.mean(pn_bits != bits_out2)
 
-        all_syms_ant1[:, p] = fit_to(syms_ant1, NUM_REF_SYMS)
-        all_syms_ant2[:, p] = fit_to(syms_ant2, NUM_REF_SYMS)
-
-        syms_to_demod1 = mf_ant1[start_idx1:end_idx1]
-        syms_to_demod2 = mf_ant2[start_idx2:end_idx2]
-
-        num_ref = min(len(syms_to_demod1), len(ref_syms))
-        phase_corr1 = np.angle(np.sum(syms_to_demod1[:num_ref] * np.conj(ref_syms[:num_ref])))
-        phase_corr2 = np.angle(np.sum(syms_to_demod2[:num_ref] * np.conj(ref_syms[:num_ref])))
-
-        bits_out1 = qpsk_demodulate(syms_to_demod1 * np.exp(-1j * phase_corr1))
-        bits_out2 = qpsk_demodulate(syms_to_demod2 * np.exp(-1j * phase_corr2))
-
-        L = min(len(pn_bits), len(bits_out1))
-        ber1 = int(np.sum(pn_bits[:L] != bits_out1[:L])) / L
-        ber2 = int(np.sum(pn_bits[:L] != bits_out2[:L])) / L
-
-        csi1 = np.mean(syms_ant1 / ref_syms[:len(syms_ant1)])
-        csi2 = np.mean(syms_ant2 / ref_syms[:len(syms_ant2)])
+        # 6. STORAGE: Only append if we got this far (Fixes Index Decoupling)
+        csi1 = np.mean(syms_ant1_rotated / ref_syms)
+        csi2 = np.mean(syms_ant2_rotated / ref_syms)
 
         results.append({
             'ber1':      ber1,
@@ -206,24 +192,16 @@ def process_packets(valid_packets, rxBuffer, ref_syms, pn_bits):
             'peakVal':   pkt['peakVal'],
             'peakTime':  pkt['peakTime'],
         })
+        collected_syms_ant1.append(syms_ant1_rotated)
+        collected_syms_ant2.append(syms_ant2_rotated)
 
-    return all_syms_ant1, all_syms_ant2, results
-
-
-def cluster_packets(all_syms_ant1, all_syms_ant2):
-    num_p = all_syms_ant1.shape[1]
-    cluster_means_ant1 = np.full((4, num_p), np.nan, dtype=complex)
-    cluster_means_ant2 = np.full((4, num_p), np.nan, dtype=complex)
-    for p in range(num_p):
-        try:
-            cluster_means_ant1[:, p] = kmeans_cluster_means(all_syms_ant1[:, p])
-        except Exception:
-            pass
-        try:
-            cluster_means_ant2[:, p] = kmeans_cluster_means(all_syms_ant2[:, p])
-        except Exception:
-            pass
-    return cluster_means_ant1, cluster_means_ant2
+    # Convert lists back to the expected (NumSyms, NumPackets) shape
+    if not results:
+        return np.array([]), np.array([]), []
+        
+    return (np.column_stack(collected_syms_ant1), 
+            np.column_stack(collected_syms_ant2), 
+            results)
 
 
 def filter_by_ber(results, syms_ant1, syms_ant2, threshold=BER_THRESHOLD):
@@ -319,14 +297,7 @@ results_S2_f, all_syms_ant1_S2_f, all_syms_ant2_S2_f, num_pkts_S2 = filter_by_be
     results_S2, all_syms_ant1_S2, all_syms_ant2_S2)
 
 # ==============================================================================
-# 8.  CLUSTERING
-# ==============================================================================
-print("Computing cluster means...")
-cluster_means_ant1_S1_f, cluster_means_ant2_S1_f = cluster_packets(all_syms_ant1_S1_f, all_syms_ant2_S1_f)
-cluster_means_ant1_S2_f, cluster_means_ant2_S2_f = cluster_packets(all_syms_ant1_S2_f, all_syms_ant2_S2_f)
-
-# ==============================================================================
-# 9.  SAVE RESULTS
+# 8.  SAVE RESULTS
 # ==============================================================================
 final_data = {
     'results_S1':             np.array([make_results_struct(results_S1_f)]),
@@ -337,10 +308,6 @@ final_data = {
     'all_syms_ant2_S1':       all_syms_ant2_S1_f,
     'all_syms_ant1_S2':       all_syms_ant1_S2_f,
     'all_syms_ant2_S2':       all_syms_ant2_S2_f,
-    'cluster_means_ant1_S1':  cluster_means_ant1_S1_f,
-    'cluster_means_ant2_S1':  cluster_means_ant2_S1_f,
-    'cluster_means_ant1_S2':  cluster_means_ant1_S2_f,
-    'cluster_means_ant2_S2':  cluster_means_ant2_S2_f,
     'rx_pos':                 rx_pos.reshape(1, -1),
     'tx_pos':                 tx_pos.reshape(1, -1),
     'freq':                   np.array([[915e6]]),
@@ -351,3 +318,37 @@ final_data = {
 
 sio.savemat(args.output, {'final_data': final_data})
 print(f"Results saved → {args.output}")
+
+# ==============================================================================
+# 9.  (OPTIONAL) PLOT CONSTELLATIONS
+# ==============================================================================
+
+# import matplotlib.pyplot as plt
+
+# def plot_constellations(all_syms_ant1, all_syms_ant2, valid_packets, label):
+#     sample_idxs = range(min(valid_packets, 10))
+#     n_cols = max(len(sample_idxs), 2)
+#     fig, axes = plt.subplots(2, n_cols, figsize=(4 * n_cols, 8))
+#     if n_cols == 1:
+#         axes = axes.reshape(2, 1)
+#     for si, p in enumerate(sample_idxs):
+#         syms1 = all_syms_ant1[:, p]
+#         syms2 = all_syms_ant2[:, p]
+#         ax = axes[0, si]
+#         ax.scatter(syms1.real, syms1.imag, s=8, c='b', alpha=0.3)
+#         ax.grid(True); ax.set_aspect('equal')
+#         ax.set_title(f'{label} Pkt {p+1} | Ant1',  fontsize=8)
+#         ax.set_xlabel('I'); ax.set_ylabel('Q')
+#         ax = axes[1, si]
+#         ax.scatter(syms2.real, syms2.imag, s=8, c='r', alpha=0.3)
+#         ax.grid(True); ax.set_aspect('equal')
+#         ax.set_title(f'{label} Pkt {p+1} | Ant2', fontsize=8)
+#         ax.set_xlabel('I'); ax.set_ylabel('Q')
+#     for si in range(len(sample_idxs), n_cols):
+#         axes[0, si].set_visible(False)
+#         axes[1, si].set_visible(False)
+#     fig.tight_layout()
+
+# plot_constellations(all_syms_ant1_S1_f, all_syms_ant2_S1_f, num_pkts_S1, "S1")
+# plot_constellations(all_syms_ant1_S2_f, all_syms_ant2_S2_f, num_pkts_S2, "S2")
+# plt.show()
