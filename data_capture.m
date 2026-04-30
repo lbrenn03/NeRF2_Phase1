@@ -1,9 +1,9 @@
 clear;
 
 % Adjust to match RX position
-x_lab = 3;
-y_lab = 3;
-orientation = 45;
+x_lab = 0;
+y_lab = 0;
+orientation = 0;
 
 disp(string(x_lab) + " " + string(y_lab) + " " + string(orientation));
 
@@ -35,7 +35,7 @@ CaptureTime = 2;           % seconds
 TotalSamples = round(Fs * CaptureTime);
 
 %% -------------------------------------------------------------------------
-% SDR CONFIGURATION
+% SDR CONFIGURATION  %5.4e9
 % -------------------------------------------------------------------------
 rxObj = comm.SDRuReceiver( ...
     'Platform',          'B210', ...
@@ -70,7 +70,7 @@ disp('Capture complete. Saving raw IQ buffer...');
 raw_data.iq          = rxBuffer;        % [TotalSamples x 2] complex double
 raw_data.Fs          = Fs;
 raw_data.CaptureTime = CaptureTime;
-raw_data.freq        = 5.4e9;
+raw_data.freq        = 915e6; % 5.4e9;
 raw_data.rx_pos      = [x_lab, y_lab, 0.571];
 raw_data.tx_pos      = tx_pos;
 raw_data.mimo        = false;
@@ -84,8 +84,8 @@ end
 
 % if you f-up a file then just uncomment this and ignore the error
 % generated
-% save(filename, 'raw_data');
-% disp('Fixer File saved!');
+%save(filename, 'raw_data');
+%disp('Fixer File saved!');
 
 if not(isfile(filename))
     save(filename, 'raw_data'); % dev filename
