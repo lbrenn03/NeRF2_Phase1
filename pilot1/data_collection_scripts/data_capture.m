@@ -19,11 +19,11 @@ tx_pos = [13, 8, 0.875];
 %tx_pos = [6, 5, 1.021];
 
 if x_lab == round(x_lab) && y_lab == round(y_lab)
-    data_folder = "mimo_data_f2/";
+    data_folder = "pilot1_data/";
 elseif x_lab == round(x_lab) || y_lab == round(y_lab)
     disp("Something is mismatched check x y")
 else
-    data_folder = "mimo_test_data_f2/";
+    data_folder = "pilot1_test/";
 end
 
 
