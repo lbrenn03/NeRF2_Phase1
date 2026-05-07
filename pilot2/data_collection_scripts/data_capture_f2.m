@@ -70,7 +70,7 @@ disp('Capture complete. Saving raw IQ buffer...');
 raw_data.iq          = rxBuffer;        % [TotalSamples x 2] complex double
 raw_data.Fs          = Fs;
 raw_data.CaptureTime = CaptureTime;
-raw_data.freq        = 915e6; % 5.4e9;
+raw_data.freq        = 5.4e9;
 raw_data.rx_pos      = [x_lab, y_lab, 0.571];
 raw_data.tx_pos      = tx_pos;
 raw_data.mimo        = false;
