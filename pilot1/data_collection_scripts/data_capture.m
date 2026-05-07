@@ -77,9 +77,9 @@ raw_data.mimo        = false;
 raw_data.rx_orient   = orientation;
     
 if x_lab >= 0
-    filename = data_folder + 'mimo_tx' + string(tx_num) + '_' + string(x_lab) + '_' + string(y_lab) + '_' + string(orientation) + '.mat';
+    filename = data_folder + 'p1_tx' + string(tx_num) + '_' + string(x_lab) + '_' + string(y_lab) + '_' + string(orientation) + '.mat';
 else
-    filename = data_folder + 'mimo_tx' + string(tx_num) + '_n1_' + string(y_lab) + '_' + string(orientation) + '.mat';
+    filename = data_folder + 'p1_tx' + string(tx_num) + '_n1_' + string(y_lab) + '_' + string(orientation) + '.mat';
 end
 
 % if you f-up a file then just uncomment this and ignore the error
