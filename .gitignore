@@ -3,9 +3,14 @@ mimo_data/
 mimo_test_data/
 mimo_data_f2/
 mimo_test_data_f2/
-Pilot_Data_1_processed/
+resample/
+resample_f2/
+resample_test_f2/
+pilot1/data/
+pilot2/data/
+
+
 .DS_Store
 **/__pycache__/
 **/*.pyc
 /.gitignore.swp
-resample/
