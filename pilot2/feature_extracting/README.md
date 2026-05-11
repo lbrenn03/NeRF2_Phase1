@@ -20,16 +20,16 @@ for downstream ML pipelines.
 ```
 - **What it runs**:
 
-  | Dataset | Script | Mode | Output Features |
-  |---------|--------|------|-----------------|
-  | F1 train | `flatten_channel_mul` | — | `f1train_features_ch_mul.csv` |
-  | F1 test  | `flatten_channel_mul` | — | `f1test_features_ch_mul.csv` |
-  | F2 train | `flatten_channel_mul` | — | `f2train_features_ch_mul.csv` |
-  | F2 test  | `flatten_channel_mul` | — | `f2test_features_ch_mul.csv` |
-  | F1 train+test | `flatten_rphi` | `polar` | `f1train/test_features_rphi.csv` |
-  | F1 train+test | `flatten_rphi` | `polar_relative` | `f1train/test_features_rdphi.csv` |
-  | F2 train+test | `flatten_rphi` | `polar` | `f2train/test_features_rphi.csv` |
-  | F2 train+test | `flatten_rphi` | `polar_relative` | `f2train/test_features_rdphi.csv` |
+  | Dataset       | Script                | Mode             | Output Features                   |
+  |---------------|-----------------------|------------------|-----------------------------------|
+  | F1 train      | `flatten_channel_mul` | —                | `f1train_features_ch_mul.csv`     |
+  | F1 test       | `flatten_channel_mul` | —                | `f1test_features_ch_mul.csv`      |
+  | F2 train      | `flatten_channel_mul` | —                | `f2train_features_ch_mul.csv`     |
+  | F2 test       | `flatten_channel_mul` | —                | `f2test_features_ch_mul.csv`      |
+  | F1 train+test | `flatten_rphi`        | `polar`          | `f1train/test_features_rphi.csv`  |
+  | F1 train+test | `flatten_rphi`        | `polar_relative` | `f1train/test_features_rdphi.csv` |
+  | F2 train+test | `flatten_rphi`        | `polar`          | `f2train/test_features_rphi.csv`  |
+  | F2 train+test | `flatten_rphi`        | `polar_relative` | `f2train/test_features_rdphi.csv` |
 
 ---
 

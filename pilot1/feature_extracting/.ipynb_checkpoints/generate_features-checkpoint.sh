@@ -1,0 +1,1 @@
+python flatten_channel_mul.py --data_dir ../data/Pilot1_Data_processed --output_dir ../feature_datasets --features_file features_chmul.csv --labels_file labels.csv

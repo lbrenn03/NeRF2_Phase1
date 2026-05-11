@@ -21,8 +21,7 @@ Output CSVs
 
 Usage
 -----
-  # Full example
-  python flatten_channel_mul.py --data_dir ../data/processed --output_dir ../feature_datasets --features_file features_1.csv --labels_file labels.csv
+  python flatten_channel_mul.py --data_dir ../data/Pilot1_Data_processed --output_dir ../feature_datasets --features_file features_chmul.csv --labels_file labels.csv
 
 Arguments
 ---------
@@ -297,13 +296,13 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', help='Directory containing preprocessed .mat files',
-                        default='../Pilot1_Data_processed', required=True)
+                        default='../data/Pilot1_Data_processed', required=True)
     parser.add_argument('--output_dir', help='Directory to save output CSV files',
-                        default='../Pilot1_Data_feature-csvs', required=False)
+                        default='../feature_datasets', required=False)
     parser.add_argument('--features_file', help='Filename for the features CSV',
-                        default='features_channel_mul.csv', required=False)
+                        default='features_chmul.csv', required=False)
     parser.add_argument('--labels_file', help='Filename for the labels CSV',
-                        default='labels_channel_mul.csv', required=False)
+                        default='labels.csv', required=False)
     args = parser.parse_args()
 
     groups = group_files(args.data_dir)
