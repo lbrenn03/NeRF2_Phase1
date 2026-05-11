@@ -6,8 +6,8 @@ mimo_test_data_f2/
 resample/
 resample_f2/
 resample_test_f2/
-pilot1/raw_data/
-pilot2/raw_data/
+pilot1/data/
+pilot2/data/
 
 
 .DS_Store
