@@ -1,5 +1,5 @@
 """
-pilot2_flatten_polar.py
+pilot2_flatten_rphi.py
 =======================
 Loads MIMO .mat files with dual-source (S1/S2) transmissions, builds the
 feature matrix, then flattens the complex-valued channel estimates into
@@ -17,21 +17,22 @@ Pipeline
 
 Flatten Modes  (selected via --mode)
 -------------------------------------
-  polar_relative        Per-sample magnitude normalization. For each
+  polar_relative_samplenorm     
+                        Per-sample magnitude normalization. For each
                         (angle, tx, cluster, packet) cell, collapses the two
                         antennas into (r1, r2, dphi = phi2-phi1). r_max is
                         computed independently per sample.
                         Output: 4*6*4*8*3 = 2304 features
                         Columns: feat_r1_0..767, feat_r2_0..767, feat_dphi_0..767
 
-  polar_1norm           Global magnitude normalization using r_max from the
+  polar                 Global magnitude normalization using r_max from the
                         train set. Keeps real/imag flattened, converts to
                         (r, phi) polar form. r normalized to [0,1] globally;
                         phi mapped from [-pi,pi] to [0,1].
                         Output: 2 * 4*6*2*4*8 = 3072 features
                         Columns: feat_r_0..1535, feat_phi_0..1535
 
-  polar_relative_1norm  Same antenna-pair relative-phase layout as
+  polar_relative        Same antenna-pair relative-phase layout as
                         polar_relative, but r_max is derived globally from
                         the train set rather than per sample.
                         Output: 4*6*4*8*3 = 2304 features
@@ -44,16 +45,18 @@ Output CSVs
   <test_features>   —  polar features for test split
   <test_labels>     —  columns: x, y, z  (test)
 
-  For modes polar_1norm and polar_relative_1norm, r_max is always computed
+  For modes polar and polar_relative, r_max is always computed
   from the train split and applied to both train and test.
 
 Usage
 -----
-python pilot2_flatten_polar.py --mode polar_relative --train_dir ../../../Pilot2_MIMO/F1_MIMO_train_processed --test_dir ../../../Pilot2_MIMO/F1_MIMO_test_processed --train_features train_features_rdphi.csv --test_features test_features_rdphi.csv
+python pilot2_flatten_rphi.py --mode polar --train_dir ../../../Pilot2_MIMO/F1_MIMO_train_processed --test_dir ../../../Pilot2_MIMO/F1_MIMO_test_processed --train_features f1train_features_rphi.csv --test_features f1test_features_rphi.csv
 
-python pilot2_flatten_polar.py --mode polar_1norm --train_dir ../../../Pilot2_MIMO/F1_MIMO_train_processed --test_dir ../../../Pilot2_MIMO/F1_MIMO_test_processed --train_features train_features_rphi.csv --test_features test_features_rphi.csv
+python pilot2_flatten_rphi.py --mode polar_relative --train_dir ../../../Pilot2_MIMO/F1_MIMO_train_processed --test_dir ../../../Pilot2_MIMO/F1_MIMO_test_processed --train_features f1train_features_rdphi.csv --test_features f1test_features_rdphi.csv
 
-python pilot2_flatten_polar.py --mode polar_relative_1norm --train_dir ../../../Pilot2_MIMO/F1_MIMO_train_processed --test_dir ../../../Pilot2_MIMO/F1_MIMO_test_processed --train_features train_features_rel1norm.csv --test_features test_features_rel1norm.csv
+python pilot2_flatten_rphi.py --mode polar --train_dir ../../../Pilot2_MIMO/F2_MIMO_train_processed --test_dir ../../../Pilot2_MIMO/F2_MIMO_test_processed --train_features f2train_features_rphi.csv --test_features f2test_features_rphi.csv
+
+python pilot2_flatten_rphi.py --mode polar_relative --train_dir ../../../Pilot2_MIMO/F2_MIMO_train_processed --test_dir ../../../Pilot2_MIMO/F2_MIMO_test_processed --train_features f2train_features_rdphi.csv --test_features f2test_features_rdphi.csv
 
 Arguments
 ---------
@@ -63,8 +66,7 @@ Arguments
                     (default: ../F1_MIMO_test_processed)
   --output_dir      Directory to write output CSVs; created if it doesn't exist
                     (default: output)
-  --mode            Flatten function to run: polar_relative | polar_1norm |
-                    polar_relative_1norm  (default: polar_relative)
+  --mode            Flatten function to run: polar_relative | polar  (default: polar_relative)
   --train_features  Filename for the train features CSV  (default: train_features.csv)
   --train_labels    Filename for the train labels CSV    (default: train_labels.csv)
   --test_features   Filename for the test features CSV   (default: test_features.csv)
@@ -119,7 +121,7 @@ REF_SYM2 = _qpsk_modulate(_ref_bits2)
 print(f"Reference symbols 1 shape: {REF_SYM1.shape}, first 5 symbols: {REF_SYM1[:5]}")
 print(f"Reference symbols 2 shape: {REF_SYM2.shape}, first 5 symbols: {REF_SYM2[:5]}")
 
-def compute_channel_h(all_syms):
+def compute_channel_h(all_syms, REF_SYMS):
     """
     Aligns all_syms against REF_SYMS using cross-correlation to find the delay,
     then estimates the channel by multiplying with the conjugate of the reference.
@@ -127,9 +129,9 @@ def compute_channel_h(all_syms):
     Input:  all_syms  (500, num_packets) complex
     Output: channel_h (488, num_packets) complex  (due to SYM_OFFSET trimming)
     """
-    n_syms, num_packets = all_syms.shape
-    n_ref = len(REF_SYMS)
-
+    n_syms, num_packets = all_syms.shape   # 500, P
+    n_ref = len(REF_SYMS)                  # 512
+    
     out_len = n_syms - 2 * SYM_OFFSET
     channel_h = np.zeros((out_len, num_packets), dtype=complex)
 
@@ -141,7 +143,7 @@ def compute_channel_h(all_syms):
             raise ValueError(
                 f"Alignment overflow: start={best_start}, n_syms={n_syms}, ref_len={len(REF_SYMS)}"
             )
-
+        
         trimmed_ref = REF_SYMS[best_start : best_start + n_syms]
         h_est = all_syms[:, p] * trimmed_ref.conj()
         channel_h[:, p] = h_est[SYM_OFFSET:-SYM_OFFSET]
@@ -444,13 +446,14 @@ def build_feature_matrix(groups):
             angle_features_all.append(np.stack(tx_features, axis=0))  # (6, 4, 2, packets)
 
         if len(angle_features_all) != 4:
+            print(angle_features_all)
             print(f"Skipping (x,y)=({x},{y_pos}), incomplete angles")
             continue
 
         sample = np.stack(angle_features_all, axis=0)   # (4, 6, 4, 2, packets)
         sample = np.transpose(sample, (0, 1, 3, 2, 4))  # (4 angles, 6 tx, 2 rx_ants, 4 clusters, packets)
         X.append(sample)
-        y.append([x * 0.6096, y_pos * 0.6096, 0.571 * 0.6096])
+        y.append([(x+1) * 0.6096, y_pos * 0.6096, 0.571 * 0.6096])
 
     if not X:
         return np.empty((0, 4, 6, len(USE_ANTENNAS), 4, TARGET_PACKETS), dtype=complex), np.empty((0, 3))
@@ -462,7 +465,7 @@ def build_feature_matrix(groups):
 # Polar flatten  —  all r columns before all phi columns
 # ==============================================================================
 
-def flatten_and_save_polar(X, y, trainortest):
+def flatten_and_save_polar_samplenorm(X, y, trainortest):
     """
     Converts complex values to polar form (r, phi) and saves as CSV.
 
@@ -501,7 +504,7 @@ def flatten_and_save_polar(X, y, trainortest):
     )
     df_y = pd.DataFrame(y, columns=['x', 'y', 'z'])
 
-    xname = f'pilot2{trainortest}_features_polar_1norm_eachdata.csv'
+    xname = f'pilot2{trainortest}_features_polar_eachdata.csv'
     yname = f'pilot2{trainortest}_labels.csv'
 
     df_X.to_csv(os.path.join(output_dir, xname), index=False)
@@ -515,7 +518,7 @@ def flatten_and_save_polar(X, y, trainortest):
 # FUTURE: relative-phi flatten
 # ==============================================================================
 
-def flatten_and_save_polar_relative(X, y, output_dir, features_file, labels_file):
+def flatten_and_save_polar_relative_samplenorm(X, y, output_dir, features_file, labels_file):
     """
     Relative-phase polar features.
 
@@ -578,7 +581,7 @@ def flatten_and_save_polar_relative(X, y, output_dir, features_file, labels_file
     print(f"Saved y: {df_y.shape} -> {labels_path}")
 
 
-def flatten_and_save_polar_1norm(X, y, X_train, output_dir, features_file, labels_file):
+def flatten_and_save_polar(X, y, X_train, output_dir, features_file, labels_file):
     os.makedirs(output_dir, exist_ok=True)
 
     N = X.shape[0]
@@ -609,7 +612,7 @@ def flatten_and_save_polar_1norm(X, y, X_train, output_dir, features_file, label
     print(f"Saved y: {df_y.shape} -> {labels_path}")
 
 
-def flatten_and_save_polar_relative_1norm(X, y, X_train, output_dir, features_file, labels_file):
+def flatten_and_save_polar_relative(X, y, X_train, output_dir, features_file, labels_file):
     os.makedirs(output_dir, exist_ok=True)
 
     N = X.shape[0]
@@ -661,7 +664,7 @@ if __name__ == '__main__':
                         help='Directory containing train .mat files', required = False)
     parser.add_argument('--test_dir',       default='../F1_MIMO_test_processed',
                         help='Directory containing test .mat files', required = False)
-    parser.add_argument('--output_dir',     default='../MIMO_feature-csvs',
+    parser.add_argument('--output_dir',     default='../feature_datasets',
                         help='Directory to write output CSVs', required = False)
     parser.add_argument('--train_features', default='train_features.csv',
                         help='Filename for the train features CSV', required = False)
@@ -672,7 +675,7 @@ if __name__ == '__main__':
     parser.add_argument('--test_labels',    default='test_labels.csv',
                         help='Filename for the test labels CSV', required = False)
     parser.add_argument('--mode',
-                        choices=['polar_relative', 'polar_1norm', 'polar_relative_1norm'],
+                        choices=['polar', 'polar_relative'],
                         default='polar_relative',
                         help='Which flatten function to run', required = True)
     args = parser.parse_args()
@@ -689,14 +692,16 @@ if __name__ == '__main__':
     print(f"X_test shape : {X_test.shape}")
     print(f"y_test shape : {y_test.shape}")
 
-    if args.mode == 'polar_relative':
-        flatten_and_save_polar_relative(X_train, y_train, args.output_dir, args.train_features, args.train_labels)
-        flatten_and_save_polar_relative(X_test,  y_test,  args.output_dir, args.test_features,  args.test_labels)
+    if args.mode == 'polar':
+        flatten_and_save_polar(X_train, y_train, X_train, args.output_dir, args.train_features, args.train_labels)
+        flatten_and_save_polar(X_test,  y_test,  X_train, args.output_dir, args.test_features,  args.test_labels)
+    elif args.mode == 'polar_relative':
+        flatten_and_save_polar_relative(X_train, y_train, X_train, args.output_dir, args.train_features, args.train_labels)
+        flatten_and_save_polar_relative(X_test,  y_test,  X_train, args.output_dir, args.test_features,  args.test_labels)
+    elif args.mode == 'polar_samplenorm':
+        flatten_and_save_polar_samplenorm(X_train, y_train, X_train, args.output_dir, args.train_features, args.train_labels)
+        flatten_and_save_polar_samplenorm(X_test,  y_test,  X_train, args.output_dir, args.test_features,  args.test_labels)
 
-    elif args.mode == 'polar_1norm':
-        flatten_and_save_polar_1norm(X_train, y_train, X_train, args.output_dir, args.train_features, args.train_labels)
-        flatten_and_save_polar_1norm(X_test,  y_test,  X_train, args.output_dir, args.test_features,  args.test_labels)
-
-    elif args.mode == 'polar_relative_1norm':
-        flatten_and_save_polar_relative_1norm(X_train, y_train, X_train, args.output_dir, args.train_features, args.train_labels)
-        flatten_and_save_polar_relative_1norm(X_test,  y_test,  X_train, args.output_dir, args.test_features,  args.test_labels)
+    elif args.mode == 'polar_relative_samplenorm':
+        flatten_and_save_polar_relative_samplenorm(X_train, y_train, X_train, args.output_dir, args.train_features, args.train_labels)
+        flatten_and_save_polar_relative_samplenorm(X_test,  y_test,  X_train, args.output_dir, args.test_features,  args.test_labels)

@@ -34,7 +34,7 @@ Usage
 -----
   python pilot2_flatten_channel_mul.py --data_dir ../../../Pilot2_MIMO/F1_MIMO_train_processed
   
-  python pilot2_flatten_channel_mul.py --data_dir ../../../Pilot2_MIMO/F1_MIMO_Data_processed --features_file f1_features_ch_mul.csv --labels_file f1_labels_ch_mul.csv
+  python pilot2_flatten_channel_mul.py --data_dir ../../../Pilot2_MIMO/F1_MIMO_train_processed --features_file f1test_features_ch_mul.csv --labels_file labels.csv
 
 Arguments
 ---------
@@ -470,7 +470,7 @@ def build_feature_matrix(groups):
             sample = np.transpose(sample, (0, 1, 3, 2, 4))
             # new:     (4 angles, 3 TX, 2 antennas, 4 clusters, packets)
             X.append(sample)
-            y.append([x * 0.6096, y_pos * 0.6096, 0.571 * 0.6096])
+            y.append([(x+1) * 0.6096, y_pos * 0.6096, 0.571 * 0.6096])
             # y.append([x, y_pos, 0.571]) in tiles
         else:
             print(f"Skipping (x,y)=({x},{y_pos}), incomplete angles")
@@ -512,11 +512,11 @@ if __name__ == '__main__':
     parser.add_argument('--data_dir', help='Directory containing preprocessed .mat files',
                         default='../F1_MIMO_train_processed', required=True)
     parser.add_argument('--output_dir', help='Directory to save output CSV files',
-                        default='../MIMO_feature-csvs', required=False)
+                        default='../feature_datasets', required=False)
     parser.add_argument('--features_file', help='Filename for the features CSV',
                         default='features_ch_mul.csv', required=False)
     parser.add_argument('--labels_file', help='Filename for the labels CSV',
-                        default='labels_ch_mul.csv', required=False)
+                        default='labels.csv', required=False)
     args = parser.parse_args()
 
     groups = group_files(args.data_dir)
