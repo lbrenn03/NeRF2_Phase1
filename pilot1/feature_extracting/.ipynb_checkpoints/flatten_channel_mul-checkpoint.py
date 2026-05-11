@@ -22,7 +22,7 @@ Output CSVs
 Usage
 -----
   # Full example
-  python flatten_channel_mul.py --data_dir ../../../Pilot1/processed --output_dir ../../../Pilot1/Pilot1_Data_feature-csvs --features_file features_1.csv --labels_file labels.csv
+  python flatten_channel_mul.py --data_dir ../data/processed --output_dir ../feature_datasets --features_file features_1.csv --labels_file labels.csv
 
 Arguments
 ---------

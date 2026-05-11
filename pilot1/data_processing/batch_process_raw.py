@@ -13,7 +13,7 @@ Example:
     python batch_process_raw.py ./raw_data ./processed_data
     python batch_process_raw.py ./raw_data ./processed_data --signal-processor ./signal_processing.py
 
-    python batch_process_raw.py -v ../../../Pilot1/Pilot1_Data_raw ../../../Pilot1/processed
+    python batch_process_raw.py -v ../data/Pilot1_Data_raw ../data/processed
 """
 
 import argparse

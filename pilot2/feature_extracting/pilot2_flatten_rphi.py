@@ -10,63 +10,63 @@ Pipeline
   .mat files  →  dual-source channel estimation (S1/S2, per antenna, per TX)
               →  k-means clustering (4 centroids per packet, per source)
               →  feature matrix  X : (N, 4, 6, 2, 4, target_packets) complex
-                                     (angle, TX×source, antenna, cluster, packet)
+                                     (angle, TX×source, rx_antenna, cluster, packet)
                                  y : (N, 3) float  [x, y, z] in meters
               →  polar decomposition + normalization
               →  features CSV  +  labels CSV
 
 Flatten Modes  (selected via --mode)
 -------------------------------------
-  polar_relative_samplenorm     
-                        Per-sample magnitude normalization. For each
-                        (angle, tx, cluster, packet) cell, collapses the two
-                        antennas into (r1, r2, dphi = phi2-phi1). r_max is
+  polar                 Global magnitude normalization using r_max from the
+                        train set. Converts to (r, phi) polar form per element.
+                        r normalized to [0,1] globally; phi mapped from
+                        [-pi, pi] to [0, 1].
+                        Output: 2 * 4*6*2*4*8 = 3072 features
+                        Columns: feat_r_0..1535, feat_phi_0..1535
+
+  polar_relative        Global magnitude normalization using r_max from the
+                        train set. For each (angle, tx, cluster, packet) cell,
+                        collapses the two antennas into (r1, r2, dphi = phi2-phi1).
+                        Output: 4*6*4*8*3 = 2304 features
+                        Columns: feat_r1_0..767, feat_r2_0..767, feat_dphi_0..767
+
+  polar_samplenorm      Per-sample magnitude normalization. Same (r, phi) layout
+                        as polar but r_max is computed independently per sample
+                        rather than globally from the train set.
+                        Output: 2 * 4*6*2*4*8 = 3072 features
+                        Columns: feat_r_0..1535, feat_phi_0..1535
+
+  polar_relative_samplenorm
+                        Per-sample magnitude normalization. Same antenna-pair
+                        relative-phase layout as polar_relative but r_max is
                         computed independently per sample.
                         Output: 4*6*4*8*3 = 2304 features
                         Columns: feat_r1_0..767, feat_r2_0..767, feat_dphi_0..767
 
-  polar                 Global magnitude normalization using r_max from the
-                        train set. Keeps real/imag flattened, converts to
-                        (r, phi) polar form. r normalized to [0,1] globally;
-                        phi mapped from [-pi,pi] to [0,1].
-                        Output: 2 * 4*6*2*4*8 = 3072 features
-                        Columns: feat_r_0..1535, feat_phi_0..1535
-
-  polar_relative        Same antenna-pair relative-phase layout as
-                        polar_relative, but r_max is derived globally from
-                        the train set rather than per sample.
-                        Output: 4*6*4*8*3 = 2304 features
-                        Columns: feat_r1_0..767, feat_r2_0..767, feat_dphi_0..767
+  For modes polar and polar_relative, r_max is always computed from the train
+  split and applied to both train and test.
 
 Output CSVs
 -----------
   <train_features>  —  polar features for training split
-  <train_labels>    —  columns: x, y, z  (train)
+  <train_labels>    —  columns: x, y, z  (train, in meters)
   <test_features>   —  polar features for test split
-  <test_labels>     —  columns: x, y, z  (test)
-
-  For modes polar and polar_relative, r_max is always computed
-  from the train split and applied to both train and test.
+  <test_labels>     —  columns: x, y, z  (test, in meters)
 
 Usage
 -----
-python pilot2_flatten_rphi.py --mode polar --train_dir ../../../Pilot2_MIMO/F1_MIMO_train_processed --test_dir ../../../Pilot2_MIMO/F1_MIMO_test_processed --train_features f1train_features_rphi.csv --test_features f1test_features_rphi.csv
-
-python pilot2_flatten_rphi.py --mode polar_relative --train_dir ../../../Pilot2_MIMO/F1_MIMO_train_processed --test_dir ../../../Pilot2_MIMO/F1_MIMO_test_processed --train_features f1train_features_rdphi.csv --test_features f1test_features_rdphi.csv
-
-python pilot2_flatten_rphi.py --mode polar --train_dir ../../../Pilot2_MIMO/F2_MIMO_train_processed --test_dir ../../../Pilot2_MIMO/F2_MIMO_test_processed --train_features f2train_features_rphi.csv --test_features f2test_features_rphi.csv
-
-python pilot2_flatten_rphi.py --mode polar_relative --train_dir ../../../Pilot2_MIMO/F2_MIMO_train_processed --test_dir ../../../Pilot2_MIMO/F2_MIMO_test_processed --train_features f2train_features_rdphi.csv --test_features f2test_features_rdphi.csv
+  python pilot2_flatten_rphi.py --mode polar --train_dir ../data/F1_MIMO_train_processed --test_dir ../data/F1_MIMO_test_processed --train_features f1train_features_rphi.csv --test_features f1test_features_rphi.csv
 
 Arguments
 ---------
   --train_dir       Directory containing train .mat files
-                    (default: ../F1_MIMO_train_processed)
+                    (default: ../data/F1_MIMO_train_processed)
   --test_dir        Directory containing test .mat files
-                    (default: ../F1_MIMO_test_processed)
+                    (default: ../data/F1_MIMO_test_processed)
   --output_dir      Directory to write output CSVs; created if it doesn't exist
-                    (default: output)
-  --mode            Flatten function to run: polar_relative | polar  (default: polar_relative)
+                    (default: ../feature_datasets)
+  --mode            Flatten function to run (required):
+                    polar | polar_relative | polar_samplenorm | polar_relative_samplenorm
   --train_features  Filename for the train features CSV  (default: train_features.csv)
   --train_labels    Filename for the train labels CSV    (default: train_labels.csv)
   --test_features   Filename for the test features CSV   (default: test_features.csv)
@@ -660,9 +660,9 @@ def flatten_and_save_polar_relative(X, y, X_train, output_dir, features_file, la
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--train_dir',      default='../F1_MIMO_train_processed',
+    parser.add_argument('--train_dir',      default='../data/F1_MIMO_train_processed',
                         help='Directory containing train .mat files', required = False)
-    parser.add_argument('--test_dir',       default='../F1_MIMO_test_processed',
+    parser.add_argument('--test_dir',       default='../data/F1_MIMO_test_processed',
                         help='Directory containing test .mat files', required = False)
     parser.add_argument('--output_dir',     default='../feature_datasets',
                         help='Directory to write output CSVs', required = False)

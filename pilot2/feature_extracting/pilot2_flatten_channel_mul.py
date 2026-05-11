@@ -32,9 +32,9 @@ Output CSVs
 
 Usage
 -----
-  python pilot2_flatten_channel_mul.py --data_dir ../../../Pilot2_MIMO/F1_MIMO_train_processed
+  python pilot2_flatten_channel_mul.py --data_dir ../data/F1_MIMO_train_processed
   
-  python pilot2_flatten_channel_mul.py --data_dir ../../../Pilot2_MIMO/F1_MIMO_train_processed --features_file f1test_features_ch_mul.csv --labels_file labels.csv
+  python pilot2_flatten_channel_mul.py --data_dir ../data/F1_MIMO_train_processed --features_file f1train_features_ch_mul.csv --labels_file train_labels.csv
 
 Arguments
 ---------
