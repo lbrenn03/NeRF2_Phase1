@@ -1,17 +1,15 @@
-
 """
-F2 Receiver — Offline Processing
-Equivalent to the MATLAB NeRF2 receiver script.
+Receiver — Offline Signal Processing
 
 Loads a pre-captured .mat file containing:
   raw_data.iq      : (1000000, 2) complex double  [antenna 1, antenna 2]
   raw_data.rx_pos  : (1, 3)  receiver XYZ position
   raw_data.tx_pos  : (1, 3)  transmitter XYZ position
 
-Outputs: nerf_<tag>.mat  matching the MATLAB final_data struct layout.
+Outputs: processed_<tag>.mat  in final_data struct layout.
 
 Usage:
-    python nerf2_receiver.py --input raw_capture.mat --output nerf_0_7.mat
+    python signal_processing.py --input raw_capture.mat --output processed_capture.mat
 """
 
 import argparse
@@ -25,9 +23,9 @@ from scipy.cluster.vq import kmeans2
 # ==============================================================================
 # 0.  CLI
 # ==============================================================================
-parser = argparse.ArgumentParser(description='NeRF2 offline receiver')
+parser = argparse.ArgumentParser(description='Offline receiver signal processing')
 # parser.add_argument('--input',  default='../pilot_data/channelCoherenceTest_raw.mat', help='Input .mat file')
-parser.add_argument('--input',  default='../../pilot_data/p1_tx2_7_9.mat', help='Input .mat file')
+parser.add_argument('--input',  default='../Pilot1_Data_raw/p1_tx3_0_0.mat', help='Input .mat file')
 parser.add_argument('--output', default='processed.mat',    help='Output .mat file')
 args = parser.parse_args()
 
@@ -219,9 +217,9 @@ for k in range(len(pks_locs)):
         break
 
 if not valid_packets:
-    sys.exit("❌  No valid packets found above threshold.")
+    sys.exit("No valid packets found above threshold.")
 
-print(f"✅  Found {len(valid_packets)} valid packets\n")
+print(f"Found {len(valid_packets)} valid packets\n")
 
 # ==============================================================================
 # 5b.  CORRELATION PLOT  (Figure 10 equivalent)
@@ -454,7 +452,7 @@ for p in range(num_p):
 # ==============================================================================
 # 8.  DIAGNOSTIC CONSTELLATION FIGURE  (Figure 2 equivalent — 4 sample packets)
 # ==============================================================================
-sample_idxs = range(NUM_PACKETS)
+sample_idxs = range(len(valid_packets))
 n_cols = max(len(sample_idxs), 2)
 
 fig2, axes = plt.subplots(2, n_cols, figsize=(4 * n_cols, 8))
