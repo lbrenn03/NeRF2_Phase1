@@ -1,6 +1,6 @@
 # Data Processing for NeRF2 Phase 1
 
-This directory contains scripts and resources to process RF signal data for creating NeRF2 training datasets. The workflow and scripts detailed below facilitate data preparation for machine learning models.
+This directory contains scripts and resources to process RF signal data for creating NeRF2 training datasets. The workflow and scripts detailed below facilitate data preparation for machine learning.
 
 ---
 
@@ -25,18 +25,23 @@ This directory contains scripts and resources to process RF signal data for crea
   - `numpy`, `scipy`, `matplotlib`, along with other optional packages in the `requirements.txt` file.
 
 #### `signal_processing.py`
-- **Purpose**: Processes `.mat` files containing RF signal data to extract relevant information critical for NeRF2 training.
+- **Purpose**: Processes a single `.mat` file containing RF signal data into structured output for NeRF2 training.
 - **Usage**:
   ```bash
   python signal_processing.py --input raw_capture.mat --output processed.mat
   ```
-  Replace `raw_capture.mat` with the raw data file, and the processed file will be stored in the specified output path.
+  Replace `raw_capture.mat` with the raw data file, and the processed file will be stored in the specified output location.
 
-- **Key Outputs**:
-  - Processes raw `.mat` files into structured datasets in the format `nerf_<tag>.mat`, matching MATLAB's final data struct layout for training purposes.
-
-- **Important Parameters**:
-  - Sampling rate and data capture time configured according to the MATLAB script used for transmission.
+#### `batch_process_raw.py`
+- **Purpose**: Automates batch processing of multiple `.mat` files by executing `signal_processing.py` for each input file.
+- **Usage**:
+  ```bash
+  python batch_process_raw.py <input_dir> <output_dir>
+  ```
+  - Replace `<input_dir>` with the folder containing `.mat` files to process.
+  - Replace `<output_dir>` with the destination folder for processed `.mat` files.
+  - Optional: Specify the location of `signal_processing.py` using `--signal-processor`.
+  - Use `--verbose` or `-v` for detailed processing logs.
 
 ---
 
@@ -53,6 +58,25 @@ This directory contains scripts and resources to process RF signal data for crea
 
 ---
 
+## High-Level Usage Guide
+
+1. **Environment Setup**:
+   - Start by running `setup.sh` to create a Python virtual environment and install dependencies necessary to run the scripts.
+
+2. **Input Data Preparation**:
+   - Place `.mat` files (generated from RF data collection using MATLAB scripts) into the `raw_data/` directory or another folder of your choice.
+
+3. **Data Processing**:
+   - Use `signal_processing.py` for processing individual files or `batch_process_raw.py` for processing multiple files in bulk.
+
+4. **Inspect Processed Data**:
+   - Review the `.mat` files saved in the output directory to ensure they meet the requirements for NeRF2 training.
+
+5. **Integrate Processed Data**:
+   - The processed datasets are ready for use in downstream NeRF2 workflows, such as training or evaluation.
+
+---
+
 ## Workflow Overview
 
 1. **Environment Setup**:
@@ -62,13 +86,21 @@ This directory contains scripts and resources to process RF signal data for crea
    - Ensure `.mat` files generated from RF data collection scripts (e.g., MATLAB scripts) are correctly placed.
 
 3. **Data Processing**:
-   - Use the `signal_processing.py` script to process the captured `.mat` files into structured data for NeRF2 training.
+   - For a single file:
+     ```bash
+     python signal_processing.py --input raw_capture.mat --output processed_capture.mat
+     ```
+   - For batch processing:
+     ```bash
+     python batch_process_raw.py raw_data/ processed_data/
+     ```
+     Replace `raw_data/` with the folder containing raw `.mat` files. The processed files will be saved in `processed_data/`.
 
 4. **Inspect Outputs**:
-   - Processed data in `.mat` format will be saved to the designated output path for use in machine learning workflows.
+   - Processed data in `.mat` format will be saved to the designated output path.
 
 ---
 
 ## Notes
-- The default parameters of `signal_processing.py` are configured to align with the MATLAB scripts used for RF signal transmission.
-- For any discrepancies or errors, verify the dependencies and configurations in `setup.sh` and `signal_processing.py`.
+- The processing pipeline relies on `signal_processing.py`, including options for running without modification or through the batch script.
+- For any discrepancies or errors, verify the dependencies and configurations in `setup.sh`, `signal_processing.py`, and `batch_process_raw.py`.

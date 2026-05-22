@@ -2,9 +2,12 @@
 
 This directory contains scripts and necessary files to process RF signal data in preparation for creating NeRF2 training datasets.
 
+---
+
 ## Directory Contents
 
 ### Scripts
+
 #### `setup.sh`
 - **Purpose**: Bootstraps a Python virtual environment and installs the required Python dependencies.
 - **Usage**:
@@ -28,7 +31,21 @@ This directory contains scripts and necessary files to process RF signal data in
 - **Optional Debugging**:
   - Constellation plots are disabled by default but can be enabled for debugging purposes by uncommenting the relevant code section at the end of the script. Ensure `matplotlib` is installed.
 
+#### `batch_process_raw.py`
+- **Purpose**: Automates batch processing of multiple `.mat` files by executing `signal_processing_mimo.py` for each input file.
+- **Usage**:
+  ```bash
+  python batch_process_raw.py <input_dir> <output_dir>
+  ```
+  - Replace `<input_dir>` with the folder containing `.mat` files to process.
+  - Replace `<output_dir>` with the destination folder for processed `.mat` files.
+  - Optional: Specify the location of `signal_processing_mimo.py` using `--signal-processor`.
+  - Use `--verbose` or `-v` for detailed processing logs.
+
+---
+
 ### Data Files
+
 #### `requirements.txt`
 - A minimal list of Python libraries required to run the scripts, including:
   - `numpy`
@@ -52,20 +69,23 @@ This directory contains scripts and necessary files to process RF signal data in
 2. **Set Up Environment**:
    - Run `setup.sh` to create a virtual environment or ensure the necessary dependencies are installed.
 
-3. **Process Data**:
-   - Run `signal_processing_mimo.py` on the generated `.mat` files to extract and structure training data.
+3. **Data Processing**:
+   - For a single file:
+     ```bash
+     python signal_processing_mimo.py --input raw_capture.mat --output processed.mat
+     ```
+   - For batch processing:
+     ```bash
+     python batch_process_raw.py raw_data/ processed_data/
+     ```
+     Replace `raw_data/` with the folder containing raw `.mat` files. The processed files will be saved in `processed_data/`.
 
 4. **Inspect Outputs**:
-   - The processed data (`all_symbols_ant1` and `all_symbols_ant2`) will be stored in the specified output `.mat` file.
-   - Optional: Enable debugging mode to visualize constellation plots.
-
-5. **Batch Processing** _(Optional)_:
-   - While `signal_processing_mimo.py` is a standalone script, it is recommended to use it as part of a batch processing workflow for multiple input files.
+   - The processed data (`all_symbols_ant1` and `all_symbols_ant2`) will be stored in the given output location.
+   - Optional: Use debugging mode for constellation visualization.
 
 ---
 
 ## Notes
-- The hardcoded defaults in `signal_processing_mimo.py` match the MATLAB configuration used to collect the data.
-- Ensure that `waveform_STTD.mat` and `rrcTx_coeffs.mat` remain in the same directory unless paths are updated in the script.
-
-For any issues running the scripts, check that all `.mat` files are correctly placed and generated using the appropriate MATLAB scripts.
+- The configuration in `signal_processing_mimo.py` matches the MATLAB setup used during data collection.
+- Verify all `.mat` files and dependencies are properly placed and matched to the required scripts.
