@@ -1,0 +1,26 @@
+dataset,dimensions,seed,mean_euclidean_error
+pilot1_rssi,121 x 1 x 3 x 2 x 1 x 1,42,1.910
+pilot1_r,111 x 1 x 3 x 2 x 4 x 8,42,1.565
+pilot1_r_3dim_avg,111 x 1 x 3 x 2 x 1 x 8,42,1.608
+pilot1_r_3dim_one,111 x 1 x 3 x 2 x 1 x 8,42,1.629
+pilot1_r_2dim,111 x 1 x 3 x 2 x 1 x 1,42,1.670
+pilot1_r_phi,111 x 2 x 3 x 2 x 4 x 8,42,1.600
+pilot1_r_phi_3dim,111 x 2 x 3 x 2 x 1 x 8,42,1.904
+pilot1_r_phi_2dim,111 x 2 x 3 x 2 x 1 x 1,42,2.224
+pilot1_r_phi_rel,111 x 3 x 3 x 1 x 4 x 8,42,1.507
+pilot1_r_phi_rel_3dim,111 x 3 x 3 x 1 x 1 x 8,42,1.933
+pilot1_r_phi_rel_2dim,111 x 3 x 3 x 1 x 1 x 1,42,1.508
+pilot1_a_b,111 x 2 x 3 x 2 x 4 x 8,42,1.592
+pilot1_a_b_3dim,111 x 2 x 3 x 2 x 1 x 8,42,1.476
+pilot1_a_b_2dim,111 x 2 x 3 x 2 x 1 x 1,42,1.958
+pilot1_channeldiv,111 x 2 x 3 x 2 x 4 x 8,42,1.465
+pilot1_channeldiv_3dim,111 x 2 x 3 x 2 x 1 x 8,42,1.467
+pilot1_channeldiv_2dim,111 x 2 x 3 x 2 x 1 x 1,42,1.792
+pilot1_channelmul,111 x 2 x 3 x 2 x 4 x 8,42,1.471
+pilot1_channelmul_3dim,111 x 2 x 3 x 2 x 1 x 8,42,1.575
+pilot1_channelmul_2dim,111 x 2 x 3 x 2 x 1 x 1,42,1.906
+pilot1_tien_syn_ab_2dim,500 x 2 x 3 x 2 x 1 x 1,42,2.980
+pilot1_tien_mix_ab_2dim,611 x 2 x 3 x 2 x 1 x 1,42,2.974
+pilot1_mixed_ab_3dim,222 x 2 x 3 x 2 x 1 x 8,42,2.684
+pilot1_mixed_ab_2dim,222 x 2 x 3 x 2 x 1 x 1,42,2.750
+pilot1_mixed_channel_2dim,222 x 2 x 3 x 2 x 1 x 1,42,2.647
