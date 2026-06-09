@@ -1,0 +1,1 @@
+python nerf2_runner.py --config configs/abs-channel-synthetic.yml --mode test --dataset_type absolute_channel --gpu 0

@@ -1,0 +1,8 @@
+.DS_Store/
+logs/
+datatools/
+__pycache__/
+.vscode/
+.claude/
+.ipynb_checkpoints/
+configs/.ipynb_checkpoints/

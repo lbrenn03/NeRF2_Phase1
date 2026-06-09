@@ -1,0 +1,1 @@
+python nerf2_runner.py --config configs/a-b-synthetic.yml --mode train --dataset_type a_b --gpu 0

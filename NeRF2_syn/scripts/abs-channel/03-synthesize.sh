@@ -1,0 +1,1 @@
+python nerf2_runner.py --config configs/abs-channel-synthetic.yml --mode synthesize --dataset_type synthesize --gpu 0
